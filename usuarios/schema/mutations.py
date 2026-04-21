@@ -186,12 +186,12 @@ class AsignarRolPermisoAUsuario(graphene.Mutation):
 
 
 class Mutation(graphene.ObjectType):
-    crear_rol                    = CrearRol.Field()
-    actualizar_rol               = ActualizarRol.Field()
-    crear_permiso                = CrearPermiso.Field()
-    asignar_permiso_a_rol        = AsignarPermisoARol.Field()
-    crear_usuario                = CrearUsuario.Field()
-    actualizar_usuario           = ActualizarUsuario.Field()
-    cambiar_password             = CambiarPassword.Field()
-    login_usuario                = LoginUsuario.Field()
+    crear_rol                     = CrearRol.Field()
+    actualizar_rol                = ActualizarRol.Field()
+    crear_permiso                 = CrearPermiso.Field()
+    asignar_permiso_a_rol         = AsignarPermisoARol.Field()
+    crear_usuario                 = CrearUsuario.Field()
+    actualizar_usuario            = ActualizarUsuario.Field()
+    cambiar_password              = CambiarPassword.Field()
+    login_usuario                 = LoginUsuario.Field()
     asignar_rol_permiso_a_usuario = AsignarRolPermisoAUsuario.Field()
