@@ -8,10 +8,7 @@ export default function ProtectedRoute({ children, permiso }) {
   }
 
   if (permiso) {
-    const permisos = usuario.idRol?.rolPermisos?.map(
-      (rp) => rp.idPermiso.nombre
-    ) || []
-
+    const permisos = usuario?.permisos || []
     if (!permisos.includes(permiso)) {
       return <Navigate to="/sin-acceso" />
     }

@@ -37,6 +37,21 @@ class ActualizarRol(graphene.Mutation):
             return ActualizarRol(rol=None, ok=False)
 
 
+class EliminarPermiso(graphene.Mutation):
+    class Arguments:
+        id_permiso = graphene.Int(required=True)
+
+    ok      = graphene.Boolean()
+    mensaje = graphene.String()
+
+    def mutate(root, info, id_permiso):
+        try:
+            Permiso.objects.get(pk=id_permiso).delete()
+            return EliminarPermiso(ok=True, mensaje='Permiso eliminado')
+        except Permiso.DoesNotExist:
+            return EliminarPermiso(ok=False, mensaje='Permiso no encontrado')
+
+
 class CrearPermiso(graphene.Mutation):
     class Arguments:
         nombre      = graphene.String(required=True)
@@ -66,6 +81,21 @@ class AsignarPermisoARol(graphene.Mutation):
             return AsignarPermisoARol(rol_permiso=rp, ok=True)
         except (Rol.DoesNotExist, Permiso.DoesNotExist):
             return AsignarPermisoARol(rol_permiso=None, ok=False)
+
+
+class EliminarRolPermiso(graphene.Mutation):
+    class Arguments:
+        id_rol_permiso = graphene.Int(required=True)
+
+    ok      = graphene.Boolean()
+    mensaje = graphene.String()
+
+    def mutate(root, info, id_rol_permiso):
+        try:
+            RolPermiso.objects.get(pk=id_rol_permiso).delete()
+            return EliminarRolPermiso(ok=True, mensaje='Permiso eliminado del rol')
+        except RolPermiso.DoesNotExist:
+            return EliminarRolPermiso(ok=False, mensaje='No encontrado')
 
 
 class CrearUsuario(graphene.Mutation):
@@ -164,6 +194,25 @@ class LoginUsuario(graphene.Mutation):
             return LoginUsuario(ok=False, mensaje='Usuario no encontrado')
 
 
+class AsignarRolAUsuario(graphene.Mutation):
+    class Arguments:
+        id_usuario = graphene.Int(required=True)
+        id_rol     = graphene.Int(required=True)
+
+    ok      = graphene.Boolean()
+    mensaje = graphene.String()
+
+    def mutate(root, info, id_usuario, id_rol):
+        try:
+            usuario        = Usuario.objects.get(pk=id_usuario)
+            rol            = Rol.objects.get(pk=id_rol)
+            usuario.id_rol = rol
+            usuario.save()
+            return AsignarRolAUsuario(ok=True, mensaje='Rol asignado correctamente')
+        except (Usuario.DoesNotExist, Rol.DoesNotExist):
+            return AsignarRolAUsuario(ok=False, mensaje='Usuario o Rol no encontrado')
+
+
 class AsignarRolPermisoAUsuario(graphene.Mutation):
     class Arguments:
         id_usuario     = graphene.Int(required=True)
@@ -185,13 +234,47 @@ class AsignarRolPermisoAUsuario(graphene.Mutation):
             return AsignarRolPermisoAUsuario(ok=False, mensaje='Usuario o RolPermiso no encontrado')
 
 
+class EliminarRolPermisoUsuario(graphene.Mutation):
+    class Arguments:
+        id_rol_permiso_usuario = graphene.Int(required=True)
+
+    ok      = graphene.Boolean()
+    mensaje = graphene.String()
+
+    def mutate(root, info, id_rol_permiso_usuario):
+        try:
+            RolPermisoUsuario.objects.get(pk=id_rol_permiso_usuario).delete()
+            return EliminarRolPermisoUsuario(ok=True, mensaje='Permiso eliminado del usuario')
+        except RolPermisoUsuario.DoesNotExist:
+            return EliminarRolPermisoUsuario(ok=False, mensaje='No encontrado')
+
+
+class EliminarUsuario(graphene.Mutation):
+    class Arguments:
+        id_usuario = graphene.Int(required=True)
+
+    ok      = graphene.Boolean()
+    mensaje = graphene.String()
+
+    def mutate(root, info, id_usuario):
+        try:
+            Usuario.objects.get(pk=id_usuario).delete()
+            return EliminarUsuario(ok=True, mensaje='Usuario eliminado')
+        except Usuario.DoesNotExist:
+            return EliminarUsuario(ok=False, mensaje='Usuario no encontrado')
+
 class Mutation(graphene.ObjectType):
     crear_rol                     = CrearRol.Field()
     actualizar_rol                = ActualizarRol.Field()
     crear_permiso                 = CrearPermiso.Field()
+    eliminar_permiso              = EliminarPermiso.Field()
     asignar_permiso_a_rol         = AsignarPermisoARol.Field()
+    eliminar_rol_permiso          = EliminarRolPermiso.Field()
     crear_usuario                 = CrearUsuario.Field()
     actualizar_usuario            = ActualizarUsuario.Field()
+    eliminar_usuario              = EliminarUsuario.Field()
     cambiar_password              = CambiarPassword.Field()
     login_usuario                 = LoginUsuario.Field()
+    asignar_rol_a_usuario         = AsignarRolAUsuario.Field()
     asignar_rol_permiso_a_usuario = AsignarRolPermisoAUsuario.Field()
+    eliminar_rol_permiso_usuario  = EliminarRolPermisoUsuario.Field()

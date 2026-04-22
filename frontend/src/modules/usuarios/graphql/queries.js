@@ -10,7 +10,8 @@ export const GET_USUARIOS = gql`
       telefono
       estado
       bloqueado
-      idRol { nombre }
+      intentosFallidos
+      idRol { idRol nombre }
     }
   }
 `
@@ -21,6 +22,11 @@ export const GET_ROLES = gql`
       idRol
       nombre
       descripcion
+      estado
+      rolPermisos {
+        idRolPermiso
+        idPermiso { idPermiso nombre }
+      }
     }
   }
 `
@@ -31,6 +37,31 @@ export const GET_PERMISOS = gql`
       idPermiso
       nombre
       descripcion
+      estado
+    }
+  }
+`
+
+export const GET_ROLES_PERMISOS = gql`
+  query {
+    rolesPermisos {
+      idRolPermiso
+      idRol { idRol nombre }
+      idPermiso { idPermiso nombre }
+    }
+  }
+`
+
+export const GET_PERMISOS_USUARIO = gql`
+  query {
+    rolesPermisosUsuarios {
+      idRolPermisoUsuario
+      idUsuario { idUsuario username }
+      idRolPermiso {
+        idRolPermiso
+        idRol { nombre }
+        idPermiso { nombre }
+      }
     }
   }
 `

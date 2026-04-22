@@ -33,6 +33,7 @@ class PoliticaContrasenaType(DjangoObjectType):
 
 class UsuarioType(DjangoObjectType):
     nombre_completo = graphene.String()
+    permisos        = graphene.List(graphene.String)
 
     class Meta:
         model = Usuario
@@ -46,6 +47,11 @@ class UsuarioType(DjangoObjectType):
     def resolve_nombre_completo(self, info):
         return self.get_nombre_completo()
 
+    def resolve_permisos(self, info):
+        return list(
+            self.rol_permisos.select_related('id_rol_permiso__id_permiso')
+            .values_list('id_rol_permiso__id_permiso__nombre', flat=True)
+        )
 
 class RolPermisoUsuarioType(DjangoObjectType):
     class Meta:
