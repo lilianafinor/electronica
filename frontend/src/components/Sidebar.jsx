@@ -2,7 +2,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import {
   LayoutDashboard, Users, Shield, Key,
-  Package, ShoppingCart, ChevronDown, ChevronRight, LogOut
+  Package, ShoppingCart, ShoppingBag, Wrench,
+  ChevronDown, ChevronRight, LogOut
 } from 'lucide-react'
 
 const MENU = [
@@ -13,7 +14,7 @@ const MENU = [
 ]
 
 const INVENTARIO = [
-  { label: 'Productos',  path: '/inventario/productos' },
+  { label: 'Artículos',  path: '/inventario/productos' },
   { label: 'Almacenes',  path: '/inventario/almacenes' },
   { label: 'Ingresos',   path: '/inventario/ingresos' },
   { label: 'Egresos',    path: '/inventario/egresos' },
@@ -21,10 +22,22 @@ const INVENTARIO = [
 ]
 
 const COMPRAS = [
-  { label: 'Proveedores',     path: '/compras/proveedores' },
-  { label: 'Órdenes Compra',  path: '/compras/ordenes' },
-  { label: 'Notas Compra',    path: '/compras/notas' },
-  { label: 'Adquisiciones',   path: '/compras/adquisiciones' },
+  { label: 'Proveedores',    path: '/compras/proveedores' },
+  { label: 'Órdenes Compra', path: '/compras/ordenes' },
+  { label: 'Notas Compra',   path: '/compras/notas' },
+  { label: 'Adquisiciones',  path: '/compras/adquisiciones' },
+]
+
+const VENTAS = [
+  { label: 'Clientes',    path: '/ventas/clientes' },
+  { label: 'Notas Venta', path: '/ventas/notas' },
+]
+
+const REPARACIONES = [
+  { label: 'Recepción Equipos', path: '/reparaciones/equipos' },
+  { label: 'Órdenes',           path: '/reparaciones/ordenes' },
+  { label: 'Diagnósticos',      path: '/reparaciones/diagnosticos' },
+  { label: 'Cotizaciones',      path: '/reparaciones/cotizaciones' },
 ]
 
 export default function Sidebar() {
@@ -32,12 +45,39 @@ export default function Sidebar() {
   const location   = useLocation()
   const usuario    = JSON.parse(localStorage.getItem('usuario') || 'null')
   const permisos   = usuario?.permisos || []
-  const [invOpen, setInvOpen]   = useState(location.pathname.startsWith('/inventario'))
+  const [invOpen,  setInvOpen]  = useState(location.pathname.startsWith('/inventario'))
   const [compOpen, setCompOpen] = useState(location.pathname.startsWith('/compras'))
+  const [ventOpen, setVentOpen] = useState(location.pathname.startsWith('/ventas'))
+  const [repOpen,  setRepOpen]  = useState(location.pathname.startsWith('/reparaciones'))
 
   const handleLogout = () => {
     localStorage.removeItem('usuario')
     navigate('/login')
+  }
+
+  const renderGroup = (label, icon, items, isOpen, setOpen, permiso) => {
+    if (permiso && !permisos.includes(permiso)) return null
+    const Icon = icon
+    return (
+      <div>
+        <button onClick={() => setOpen(!isOpen)}
+          className="flex items-center gap-3 px-4 py-2 w-full rounded-lg hover:bg-blue-700 transition">
+          <Icon size={18} />
+          <span className="flex-1 text-left">{label}</span>
+          {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        </button>
+        {isOpen && (
+          <div className="ml-4 mt-1 space-y-1">
+            {items.map((item) => (
+              <Link key={item.path} to={item.path}
+                className={`flex items-center px-4 py-2 rounded-lg transition text-sm ${location.pathname === item.path ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    )
   }
 
   return (
@@ -51,7 +91,7 @@ export default function Sidebar() {
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {MENU.map((item) => {
           if (item.permiso && !permisos.includes(item.permiso)) return null
-          const Icon  = item.icon
+          const Icon   = item.icon
           const activo = location.pathname === item.path
           return (
             <Link key={item.path} to={item.path}
@@ -62,47 +102,10 @@ export default function Sidebar() {
           )
         })}
 
-        {permisos.includes('gestionar_inventario') && (
-          <div>
-            <button onClick={() => setInvOpen(!invOpen)}
-              className="flex items-center gap-3 px-4 py-2 w-full rounded-lg hover:bg-blue-700 transition">
-              <Package size={18} />
-              <span className="flex-1 text-left">Inventario</span>
-              {invOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            </button>
-            {invOpen && (
-              <div className="ml-4 mt-1 space-y-1">
-                {INVENTARIO.map((item) => (
-                  <Link key={item.path} to={item.path}
-                    className={`flex items-center px-4 py-2 rounded-lg transition text-sm ${location.pathname === item.path ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {permisos.includes('gestionar_compras') && (
-          <div>
-            <button onClick={() => setCompOpen(!compOpen)}
-              className="flex items-center gap-3 px-4 py-2 w-full rounded-lg hover:bg-blue-700 transition">
-              <ShoppingCart size={18} />
-              <span className="flex-1 text-left">Compras</span>
-              {compOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            </button>
-            {compOpen && (
-              <div className="ml-4 mt-1 space-y-1">
-                {COMPRAS.map((item) => (
-                  <Link key={item.path} to={item.path}
-                    className={`flex items-center px-4 py-2 rounded-lg transition text-sm ${location.pathname === item.path ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        {renderGroup('Inventario',    Package,      INVENTARIO,    invOpen,  setInvOpen,  'gestionar_inventario')}
+        {renderGroup('Compras',       ShoppingCart, COMPRAS,       compOpen, setCompOpen, 'gestionar_compras')}
+        {renderGroup('Ventas',        ShoppingBag,  VENTAS,        ventOpen, setVentOpen, 'gestionar_ventas')}
+        {renderGroup('Reparaciones',  Wrench,       REPARACIONES,  repOpen,  setRepOpen,  'gestionar_reparaciones')}
       </nav>
 
       <div className="p-4 border-t border-blue-700">

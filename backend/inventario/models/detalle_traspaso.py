@@ -1,6 +1,6 @@
 from django.db import models
 from .traspaso import Traspaso
-from .producto import Producto
+from .articulo import Producto
 from .almacen import Almacen
 
 

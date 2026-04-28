@@ -1,5 +1,5 @@
 from django.db import models
-from .producto import Producto
+from .articulo import Producto
 from .almacen import Almacen
 
 
@@ -22,10 +22,10 @@ class ProductoAlmacen(models.Model):
                           )
 
     class Meta:
-        db_table = 'producto_almacen'
+        db_table        = 'producto_almacen'
         unique_together = ('id_producto', 'id_almacen')
-        verbose_name = 'Producto en Almacén'
-        verbose_name_plural = 'Productos en Almacén'
+        verbose_name        = 'Artículo en Almacén'
+        verbose_name_plural = 'Artículos en Almacén'
 
     def __str__(self):
         return f"{self.id_producto.nombre} — {self.id_almacen.nombre}"

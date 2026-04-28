@@ -33,10 +33,10 @@ class Producto(models.Model):
                    )
 
     class Meta:
-        db_table = 'producto'
-        verbose_name = 'Producto'
-        verbose_name_plural = 'Productos'
-        ordering = ['nombre']
+        db_table     = 'producto'
+        verbose_name = 'Artículo'
+        verbose_name_plural = 'Artículos'
+        ordering     = ['nombre']
 
     def __str__(self):
         return self.nombre

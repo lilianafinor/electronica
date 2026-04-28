@@ -1,6 +1,6 @@
 from django.db import models
 from .nota_ingreso import NotaIngreso
-from .producto import Producto
+from .articulo import Producto
 from .almacen import Almacen
 
 

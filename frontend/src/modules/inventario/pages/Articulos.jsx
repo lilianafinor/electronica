@@ -33,7 +33,7 @@ export default function Productos() {
         }
       })
       if (res.crearProducto.ok) {
-        setMensaje('Producto creado correctamente')
+        setMensaje('Artículo creado correctamente')
         setForm({ nombre: '', descripcion: '', precio: '', idMarca: '', idCategoria: '', idUnidad: '' })
         setModo('lista')
         refetch()
@@ -58,7 +58,7 @@ export default function Productos() {
         }
       })
       if (res.actualizarProducto.ok) {
-        setMensaje('Producto actualizado')
+        setMensaje('Artículo actualizado')
         setModo('lista')
         refetch()
       }
@@ -86,19 +86,19 @@ export default function Productos() {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-gray-800">Gestión de Productos</h2>
+        <h2 className="text-xl font-bold text-gray-800">Gestión de Artículos</h2>
         <button
           onClick={() => { setModo(modo === 'nuevo' ? 'lista' : 'nuevo'); setMensaje('') }}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700"
         >
-          {modo === 'nuevo' ? 'Ver lista' : '+ Nuevo Producto'}
+          {modo === 'nuevo' ? 'Ver lista' : '+ Nuevo Artículo'}
         </button>
       </div>
 
       {(modo === 'nuevo' || modo === 'editar') && (
         <form onSubmit={modo === 'nuevo' ? handleCrear : handleEditar} className="bg-white p-4 rounded-lg shadow mb-6">
           <h3 className="font-semibold text-gray-700 mb-3">
-            {modo === 'nuevo' ? 'Nuevo Producto' : `Editando: ${productoSel?.nombre}`}
+            {modo === 'nuevo' ? 'Nuevo Artículo' : `Editando: ${productoSel?.nombre}`}
           </h3>
           <div className="grid grid-cols-3 gap-4">
             <div>
@@ -144,7 +144,7 @@ export default function Productos() {
           {mensaje && <p className="text-green-600 text-sm mt-2">{mensaje}</p>}
           <div className="flex gap-2 mt-3">
             <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
-              {modo === 'nuevo' ? 'Crear Producto' : 'Guardar Cambios'}
+              {modo === 'nuevo' ? 'Crear Artículo' : 'Guardar Cambios'}
             </button>
             <button type="button" onClick={() => setModo('lista')} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-300">
               Cancelar

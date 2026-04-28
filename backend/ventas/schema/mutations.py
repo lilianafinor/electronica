@@ -1,0 +1,163 @@
+import graphene
+from decimal import Decimal
+from .queries import ClienteType, NotaVentaType, DetalleVentaType
+from ventas.models import Cliente, NotaVenta, DetalleVenta
+from usuarios.models import Usuario
+from inventario.models import Producto, Almacen, ProductoAlmacen
+
+
+class CrearCliente(graphene.Mutation):
+    class Arguments:
+        nombre    = graphene.String(required=True)
+        paterno   = graphene.String()
+        materno   = graphene.String()
+        telefono  = graphene.String()
+        correo    = graphene.String()
+        nit       = graphene.String()
+        direccion = graphene.String()
+
+    cliente = graphene.Field(ClienteType)
+    ok      = graphene.Boolean()
+
+    def mutate(root, info, nombre, paterno=None, materno=None,
+               telefono=None, correo=None, nit=None, direccion=None):
+        cliente = Cliente.objects.create(
+            nombre=nombre, paterno=paterno, materno=materno,
+            telefono=telefono, correo=correo, nit=nit, direccion=direccion
+        )
+        return CrearCliente(cliente=cliente, ok=True)
+
+
+class ActualizarCliente(graphene.Mutation):
+    class Arguments:
+        id_cliente = graphene.Int(required=True)
+        nombre     = graphene.String()
+        paterno    = graphene.String()
+        materno    = graphene.String()
+        telefono   = graphene.String()
+        correo     = graphene.String()
+        nit        = graphene.String()
+        direccion  = graphene.String()
+        estado     = graphene.String()
+
+    cliente = graphene.Field(ClienteType)
+    ok      = graphene.Boolean()
+
+    def mutate(root, info, id_cliente, **kwargs):
+        try:
+            cliente = Cliente.objects.get(pk=id_cliente)
+            for key, value in kwargs.items():
+                setattr(cliente, key, value)
+            cliente.save()
+            return ActualizarCliente(cliente=cliente, ok=True)
+        except Cliente.DoesNotExist:
+            return ActualizarCliente(cliente=None, ok=False)
+
+
+class CrearNotaVenta(graphene.Mutation):
+    class Arguments:
+        fecha_venta = graphene.Date(required=True)
+        id_cliente  = graphene.Int(required=True)
+        glosa       = graphene.String()
+        tipo_pago   = graphene.String()
+        id_usuario  = graphene.Int()
+
+    nota_venta = graphene.Field(NotaVentaType)
+    ok         = graphene.Boolean()
+    mensaje    = graphene.String()
+
+    def mutate(root, info, fecha_venta, id_cliente,
+               glosa=None, tipo_pago='contado', id_usuario=None):
+        try:
+            venta = NotaVenta.objects.create(
+                fecha_venta=fecha_venta,
+                glosa=glosa,
+                tipo_pago=tipo_pago,
+                id_cliente=Cliente.objects.get(pk=id_cliente),
+                id_usuario=Usuario.objects.get(pk=id_usuario) if id_usuario else None
+            )
+            return CrearNotaVenta(nota_venta=venta, ok=True, mensaje='Venta creada')
+        except Cliente.DoesNotExist:
+            return CrearNotaVenta(nota_venta=None, ok=False, mensaje='Cliente no encontrado')
+
+
+class AgregarDetalleVenta(graphene.Mutation):
+    class Arguments:
+        id_venta    = graphene.Int(required=True)
+        id_producto = graphene.Int(required=True)
+        id_almacen  = graphene.Int(required=True)
+        cantidad    = graphene.String(required=True)
+        precio_uni  = graphene.String(required=True)
+
+    detalle_venta = graphene.Field(DetalleVentaType)
+    ok            = graphene.Boolean()
+    mensaje       = graphene.String()
+
+    def mutate(root, info, id_venta, id_producto, id_almacen, cantidad, precio_uni):
+        try:
+            cantidad   = Decimal(cantidad)
+            precio_uni = Decimal(precio_uni)
+            subtotal   = cantidad * precio_uni
+
+            prod_almacen = ProductoAlmacen.objects.get(
+                id_producto=id_producto,
+                id_almacen=id_almacen
+            )
+            if prod_almacen.stock < cantidad:
+                return AgregarDetalleVenta(ok=False, mensaje='Stock insuficiente')
+
+            detalle = DetalleVenta.objects.create(
+                id_venta=NotaVenta.objects.get(pk=id_venta),
+                id_producto=Producto.objects.get(pk=id_producto),
+                id_almacen=Almacen.objects.get(pk=id_almacen),
+                cantidad=cantidad,
+                precio_uni=precio_uni,
+                precio_subtotal=subtotal
+            )
+            prod_almacen.stock = prod_almacen.stock - cantidad
+            prod_almacen.save()
+
+            venta = detalle.id_venta
+            venta.monto_total = sum(d.precio_subtotal for d in venta.detalles.all())
+            venta.save()
+
+            return AgregarDetalleVenta(
+                detalle_venta=detalle, ok=True,
+                mensaje='Producto agregado y stock actualizado'
+            )
+        except ProductoAlmacen.DoesNotExist:
+            return AgregarDetalleVenta(ok=False, mensaje='Producto no existe en ese almacén')
+        except (NotaVenta.DoesNotExist, Producto.DoesNotExist, Almacen.DoesNotExist):
+            return AgregarDetalleVenta(ok=False, mensaje='Datos no encontrados')
+
+
+class CancelarVenta(graphene.Mutation):
+    class Arguments:
+        id_venta = graphene.Int(required=True)
+
+    ok      = graphene.Boolean()
+    mensaje = graphene.String()
+
+    def mutate(root, info, id_venta):
+        try:
+            venta        = NotaVenta.objects.get(pk=id_venta)
+            venta.estado = 'cancelado'
+            venta.save()
+            for detalle in venta.detalles.all():
+                prod_almacen = ProductoAlmacen.objects.get(
+                    id_producto=detalle.id_producto,
+                    id_almacen=detalle.id_almacen
+                )
+                prod_almacen.stock = prod_almacen.stock + detalle.cantidad
+                prod_almacen.save()
+            return CancelarVenta(ok=True, mensaje='Venta cancelada y stock restaurado')
+        except NotaVenta.DoesNotExist:
+            return CancelarVenta(ok=False, mensaje='Venta no encontrada')
+
+
+class Mutation(graphene.ObjectType):
+    crear_cliente        = CrearCliente.Field()
+    actualizar_cliente   = ActualizarCliente.Field()
+    crear_nota_venta     = CrearNotaVenta.Field()
+    agregar_detalle_venta = AgregarDetalleVenta.Field()
+    cancelar_venta       = CancelarVenta.Field()

@@ -108,12 +108,12 @@ export default function Egresos() {
       {modo === 'detalle' && notaSel && (
         <div className="bg-white p-4 rounded-lg shadow mb-6">
           <h3 className="font-semibold text-gray-700 mb-3">
-            Agregar productos a Nota Egreso #{notaSel.idEgreso}
+            Agregar artículos a Nota Egreso #{notaSel.idEgreso}
           </h3>
           <form onSubmit={handleAgregarDetalle}>
             <div className="grid grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Producto</label>
+                <label className="block text-sm text-gray-600 mb-1">Artículo</label>
                 <select value={formDetalle.idProducto} onChange={(e) => setFormDetalle({ ...formDetalle, idProducto: e.target.value })}
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                   <option value="">-- Selecciona --</option>
@@ -141,7 +141,7 @@ export default function Egresos() {
             </div>
             {mensaje && <p className={`text-sm mt-2 ${mensaje.includes('insuficiente') ? 'text-red-600' : 'text-green-600'}`}>{mensaje}</p>}
             <button type="submit" className="mt-3 bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
-              Agregar Producto
+              Agregar Artículo
             </button>
           </form>
         </div>
@@ -156,7 +156,7 @@ export default function Egresos() {
                 <th className="px-4 py-3 text-left">Fecha</th>
                 <th className="px-4 py-3 text-left">Motivo</th>
                 <th className="px-4 py-3 text-left">Usuario</th>
-                <th className="px-4 py-3 text-left">Productos</th>
+                <th className="px-4 py-3 text-left">Artículos</th>
                 <th className="px-4 py-3 text-left">Estado</th>
               </tr>
             </thead>

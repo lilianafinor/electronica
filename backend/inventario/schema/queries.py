@@ -7,8 +7,6 @@ from inventario.models import (
 )
 
 
-# ── Types ─────────────────────────────────────────────
-
 class AlmacenType(DjangoObjectType):
     class Meta:
         model = Almacen
@@ -92,8 +90,6 @@ class DetalleTraspasoType(DjangoObjectType):
         fields = ('id_detalle_traspaso', 'cantidad', 'id_traspaso', 'id_producto', 'id_almacen')
 
 
-# ── Queries ───────────────────────────────────────────
-
 class Query(graphene.ObjectType):
     almacenes         = graphene.List(AlmacenType)
     almacen           = graphene.Field(AlmacenType, id_almacen=graphene.Int(required=True))
@@ -104,6 +100,8 @@ class Query(graphene.ObjectType):
     unidades_medida   = graphene.List(UnidadMedidaType)
     unidad_medida     = graphene.Field(UnidadMedidaType, id_unidad=graphene.Int(required=True))
     ges_precios       = graphene.List(GesPrecioType)
+    articulos         = graphene.List(ProductoType)
+    articulo          = graphene.Field(ProductoType, id_producto=graphene.Int(required=True))
     productos         = graphene.List(ProductoType)
     producto          = graphene.Field(ProductoType, id_producto=graphene.Int(required=True))
     productos_almacen = graphene.List(ProductoAlmacenType)
@@ -152,6 +150,17 @@ class Query(graphene.ObjectType):
 
     def resolve_ges_precios(root, info):
         return GesPrecio.objects.all()
+
+    def resolve_articulos(root, info):
+        return Producto.objects.select_related(
+            'id_marca', 'id_categoria', 'id_unidad'
+        ).filter(estado='activo')
+
+    def resolve_articulo(root, info, id_producto):
+        try:
+            return Producto.objects.get(pk=id_producto)
+        except Producto.DoesNotExist:
+            return None
 
     def resolve_productos(root, info):
         return Producto.objects.select_related(

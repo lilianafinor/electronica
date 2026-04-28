@@ -3,7 +3,7 @@ from .marca import Marca
 from .categoria import Categoria
 from .unidad_medida import UnidadMedida
 from .ges_precio import GesPrecio
-from .producto import Producto
+from .articulo import Producto
 from .producto_almacen import ProductoAlmacen
 from .nota_ingreso import NotaIngreso
 from .detalle_ingreso import DetalleIngreso

@@ -127,12 +127,12 @@ export default function Traspasos() {
       {modo === 'detalle' && traspasoSel && (
         <div className="bg-white p-4 rounded-lg shadow mb-6">
           <h3 className="font-semibold text-gray-700 mb-3">
-            Agregar productos al Traspaso #{traspasoSel.idTraspaso}
+            Agregar artículos al Traspaso #{traspasoSel.idTraspaso}
           </h3>
           <form onSubmit={handleAgregarDetalle}>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Producto</label>
+                <label className="block text-sm text-gray-600 mb-1">Artículo</label>
                 <select value={formDetalle.idProducto} onChange={(e) => setFormDetalle({ ...formDetalle, idProducto: e.target.value })}
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                   <option value="">-- Selecciona --</option>
@@ -147,7 +147,7 @@ export default function Traspasos() {
             </div>
             {mensaje && <p className={`text-sm mt-2 ${mensaje.includes('insuficiente') || mensaje.includes('no encontrado') ? 'text-red-600' : 'text-green-600'}`}>{mensaje}</p>}
             <button type="submit" className="mt-3 bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
-              Traspasar Producto
+              Traspasar Artículo
             </button>
           </form>
         </div>
@@ -163,7 +163,7 @@ export default function Traspasos() {
                 <th className="px-4 py-3 text-left">Tipo</th>
                 <th className="px-4 py-3 text-left">Origen</th>
                 <th className="px-4 py-3 text-left">Destino</th>
-                <th className="px-4 py-3 text-left">Productos</th>
+                <th className="px-4 py-3 text-left">Artículos</th>
                 <th className="px-4 py-3 text-left">Estado</th>
               </tr>
             </thead>

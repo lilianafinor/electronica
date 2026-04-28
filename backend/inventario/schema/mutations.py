@@ -313,7 +313,7 @@ class AgregarDetalleEgreso(graphene.Mutation):
             prod_almacen.save()
             return AgregarDetalleEgreso(detalle_egreso=detalle, ok=True, mensaje='Egreso registrado')
         except ProductoAlmacen.DoesNotExist:
-            return AgregarDetalleEgreso(ok=False, mensaje='Producto no existe en ese almacén')
+            return AgregarDetalleEgreso(ok=False, mensaje='Artículo no existe en ese almacén')
 
 
 class CrearTraspaso(graphene.Mutation):
@@ -387,9 +387,9 @@ class AgregarDetalleTraspaso(graphene.Mutation):
         except Traspaso.DoesNotExist:
             return AgregarDetalleTraspaso(ok=False, mensaje='Traspaso no encontrado')
         except Producto.DoesNotExist:
-            return AgregarDetalleTraspaso(ok=False, mensaje='Producto no encontrado')
+            return AgregarDetalleTraspaso(ok=False, mensaje='Artículo no encontrado')
         except ProductoAlmacen.DoesNotExist:
-            return AgregarDetalleTraspaso(ok=False, mensaje='Producto no existe en almacén origen')
+            return AgregarDetalleTraspaso(ok=False, mensaje='Artículo no existe en almacén origen')
 
 
 class Mutation(graphene.ObjectType):

@@ -6,7 +6,7 @@ import Dashboard      from './pages/Dashboard'
 import UsuariosPage   from './modules/usuarios/pages/UsuariosPage'
 import RolesPage      from './modules/usuarios/pages/RolesPage'
 import PermisosPage   from './modules/usuarios/pages/PermisosPage'
-import Productos      from './modules/inventario/pages/Productos'
+import Productos      from './modules/inventario/pages/Articulos'
 import Almacenes      from './modules/inventario/pages/Almacenes'
 import Ingresos       from './modules/inventario/pages/Ingresos'
 import Egresos        from './modules/inventario/pages/Egresos'
@@ -15,6 +15,12 @@ import Proveedores    from './modules/compras/pages/Proveedores'
 import OrdenesCompra  from './modules/compras/pages/OrdenesCompra'
 import NotasCompra    from './modules/compras/pages/NotasCompra'
 import Adquisiciones  from './modules/compras/pages/Adquisiciones'
+import Clientes       from './modules/ventas/pages/Clientes'
+import NotasVenta     from './modules/ventas/pages/NotasVenta'
+import Equipos        from './modules/reparaciones/pages/Equipos'
+import OrdenesReparacion from './modules/reparaciones/pages/OrdenesReparacion'
+import Diagnosticos   from './modules/reparaciones/pages/Diagnosticos'
+import Cotizaciones   from './modules/reparaciones/pages/Cotizaciones'
 
 function App() {
   return (
@@ -63,6 +69,26 @@ function App() {
       }/>
       <Route path="/compras/adquisiciones" element={
         <ProtectedRoute permiso="gestionar_compras"><Layout><Adquisiciones /></Layout></ProtectedRoute>
+      }/>
+
+      <Route path="/ventas/clientes" element={
+        <ProtectedRoute permiso="gestionar_ventas"><Layout><Clientes /></Layout></ProtectedRoute>
+      }/>
+      <Route path="/ventas/notas" element={
+        <ProtectedRoute permiso="gestionar_ventas"><Layout><NotasVenta /></Layout></ProtectedRoute>
+      }/>
+
+      <Route path="/reparaciones/equipos" element={
+        <ProtectedRoute permiso="gestionar_reparaciones"><Layout><Equipos /></Layout></ProtectedRoute>
+      }/>
+      <Route path="/reparaciones/ordenes" element={
+        <ProtectedRoute permiso="gestionar_reparaciones"><Layout><OrdenesReparacion /></Layout></ProtectedRoute>
+      }/>
+      <Route path="/reparaciones/diagnosticos" element={
+        <ProtectedRoute permiso="gestionar_reparaciones"><Layout><Diagnosticos /></Layout></ProtectedRoute>
+      }/>
+      <Route path="/reparaciones/cotizaciones" element={
+        <ProtectedRoute permiso="gestionar_reparaciones"><Layout><Cotizaciones /></Layout></ProtectedRoute>
       }/>
 
       <Route path="/sin-acceso" element={
