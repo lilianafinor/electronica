@@ -14,15 +14,16 @@ const MENU = [
 ]
 
 const INVENTARIO = [
-  { label: 'Artículos',  path: '/inventario/productos' },
-  { label: 'Almacenes',  path: '/inventario/almacenes' },
-  { label: 'Ingresos',   path: '/inventario/ingresos' },
-  { label: 'Egresos',    path: '/inventario/egresos' },
-  { label: 'Traspasos',  path: '/inventario/traspasos' },
+  { label: 'Artículos', path: '/inventario/productos' },
+  { label: 'Almacenes', path: '/inventario/almacenes' },
+  { label: 'Ingresos',  path: '/inventario/ingresos' },
+  { label: 'Egresos',   path: '/inventario/egresos' },
+  { label: 'Traspasos', path: '/inventario/traspasos' },
 ]
 
 const COMPRAS = [
   { label: 'Proveedores',    path: '/compras/proveedores' },
+  { label: 'Catálogo',       path: '/compras/catalogo' },
   { label: 'Órdenes Compra', path: '/compras/ordenes' },
   { label: 'Notas Compra',   path: '/compras/notas' },
   { label: 'Adquisiciones',  path: '/compras/adquisiciones' },
@@ -102,10 +103,10 @@ export default function Sidebar() {
           )
         })}
 
-        {renderGroup('Inventario',    Package,      INVENTARIO,    invOpen,  setInvOpen,  'gestionar_inventario')}
-        {renderGroup('Compras',       ShoppingCart, COMPRAS,       compOpen, setCompOpen, 'gestionar_compras')}
-        {renderGroup('Ventas',        ShoppingBag,  VENTAS,        ventOpen, setVentOpen, 'gestionar_ventas')}
-        {renderGroup('Reparaciones',  Wrench,       REPARACIONES,  repOpen,  setRepOpen,  'gestionar_reparaciones')}
+        {renderGroup('Inventario',   Package,      INVENTARIO,   invOpen,  setInvOpen,  'gestionar_inventario')}
+        {renderGroup('Compras',      ShoppingCart, COMPRAS,      compOpen, setCompOpen, 'gestionar_compras')}
+        {renderGroup('Ventas',       ShoppingBag,  VENTAS,       ventOpen, setVentOpen, 'gestionar_ventas')}
+        {renderGroup('Reparaciones', Wrench,       REPARACIONES, repOpen,  setRepOpen,  'gestionar_reparaciones')}
       </nav>
 
       <div className="p-4 border-t border-blue-700">

@@ -8,6 +8,7 @@ class NotaVenta(models.Model):
         ('contado', 'Contado'),
         ('credito', 'Crédito'),
         ('transferencia', 'Transferencia'),
+        ('qr', 'QR'),
     ]
     id_venta    = models.AutoField(primary_key=True)
     fecha_venta = models.DateField()

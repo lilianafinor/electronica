@@ -4,6 +4,7 @@ from .queries import ClienteType, NotaVentaType, DetalleVentaType
 from ventas.models import Cliente, NotaVenta, DetalleVenta
 from usuarios.models import Usuario
 from inventario.models import Producto, Almacen, ProductoAlmacen
+from ventas.libelula import registrar_deuda_venta
 
 
 class CrearCliente(graphene.Mutation):
@@ -67,7 +68,7 @@ class CrearNotaVenta(graphene.Mutation):
     mensaje    = graphene.String()
 
     def mutate(root, info, fecha_venta, id_cliente,
-               glosa=None, tipo_pago='contado', id_usuario=None):
+               glosa=None, tipo_pago='qr', id_usuario=None):
         try:
             venta = NotaVenta.objects.create(
                 fecha_venta=fecha_venta,
@@ -155,9 +156,62 @@ class CancelarVenta(graphene.Mutation):
             return CancelarVenta(ok=False, mensaje='Venta no encontrada')
 
 
+# ── Nueva mutation: Generar QR con Libélula ───────────────────────────────────
+class GenerarQrVenta(graphene.Mutation):
+    class Arguments:
+        id_venta = graphene.Int(required=True)
+
+    ok             = graphene.Boolean()
+    mensaje        = graphene.String()
+    url_pasarela   = graphene.String()
+    qr_url         = graphene.String()
+    id_transaccion = graphene.String()
+
+    def mutate(root, info, id_venta):
+        try:
+            venta = NotaVenta.objects.prefetch_related(
+                'detalles__id_producto'
+            ).select_related('id_cliente').get(pk=id_venta)
+
+            if venta.estado == 'cancelado':
+                return GenerarQrVenta(
+                    ok=False,
+                    mensaje='No se puede generar QR para una venta cancelada'
+                )
+
+            if venta.monto_total <= 0:
+                return GenerarQrVenta(
+                    ok=False,
+                    mensaje='La venta no tiene artículos. Agrega artículos antes de generar el QR.'
+                )
+
+            resultado = registrar_deuda_venta(venta)
+
+            if resultado['ok']:
+                # Guardar id_transaccion en glosa para trazabilidad
+                if resultado['id_transaccion']:
+                    venta.glosa = (venta.glosa or '') + f" | TXN:{resultado['id_transaccion']}"
+                    venta.tipo_pago = 'qr'
+                    venta.save()
+
+                return GenerarQrVenta(
+                    ok=True,
+                    mensaje=resultado['mensaje'],
+                    url_pasarela=resultado['url_pasarela'],
+                    qr_url=resultado['qr_url'],
+                    id_transaccion=resultado['id_transaccion'],
+                )
+            else:
+                return GenerarQrVenta(ok=False, mensaje=resultado['mensaje'])
+
+        except NotaVenta.DoesNotExist:
+            return GenerarQrVenta(ok=False, mensaje='Venta no encontrada')
+
+
 class Mutation(graphene.ObjectType):
-    crear_cliente        = CrearCliente.Field()
-    actualizar_cliente   = ActualizarCliente.Field()
-    crear_nota_venta     = CrearNotaVenta.Field()
+    crear_cliente         = CrearCliente.Field()
+    actualizar_cliente    = ActualizarCliente.Field()
+    crear_nota_venta      = CrearNotaVenta.Field()
     agregar_detalle_venta = AgregarDetalleVenta.Field()
-    cancelar_venta       = CancelarVenta.Field()
+    cancelar_venta        = CancelarVenta.Field()
+    generar_qr_venta      = GenerarQrVenta.Field()

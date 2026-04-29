@@ -1,26 +1,27 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import Login          from './modules/usuarios/pages/Login'
-import Layout         from './components/Layout'
-import ProtectedRoute from './components/ProtectedRoute'
-import Dashboard      from './pages/Dashboard'
-import UsuariosPage   from './modules/usuarios/pages/UsuariosPage'
-import RolesPage      from './modules/usuarios/pages/RolesPage'
-import PermisosPage   from './modules/usuarios/pages/PermisosPage'
-import Productos      from './modules/inventario/pages/Articulos'
-import Almacenes      from './modules/inventario/pages/Almacenes'
-import Ingresos       from './modules/inventario/pages/Ingresos'
-import Egresos        from './modules/inventario/pages/Egresos'
-import Traspasos      from './modules/inventario/pages/Traspasos'
-import Proveedores    from './modules/compras/pages/Proveedores'
-import OrdenesCompra  from './modules/compras/pages/OrdenesCompra'
-import NotasCompra    from './modules/compras/pages/NotasCompra'
-import Adquisiciones  from './modules/compras/pages/Adquisiciones'
-import Clientes       from './modules/ventas/pages/Clientes'
-import NotasVenta     from './modules/ventas/pages/NotasVenta'
-import Equipos        from './modules/reparaciones/pages/Equipos'
+import Login             from './modules/usuarios/pages/Login'
+import Layout            from './components/Layout'
+import ProtectedRoute    from './components/ProtectedRoute'
+import Dashboard         from './pages/Dashboard'
+import UsuariosPage      from './modules/usuarios/pages/UsuariosPage'
+import RolesPage         from './modules/usuarios/pages/RolesPage'
+import PermisosPage      from './modules/usuarios/pages/PermisosPage'
+import Productos         from './modules/inventario/pages/Articulos'
+import Almacenes         from './modules/inventario/pages/Almacenes'
+import Ingresos          from './modules/inventario/pages/Ingresos'
+import Egresos           from './modules/inventario/pages/Egresos'
+import Traspasos         from './modules/inventario/pages/Traspasos'
+import Proveedores       from './modules/compras/pages/Proveedores'
+import CatalogoProveedor from './modules/compras/pages/CatalogoProveedor'
+import OrdenesCompra     from './modules/compras/pages/OrdenesCompra'
+import NotasCompra       from './modules/compras/pages/NotasCompra'
+import Adquisiciones     from './modules/compras/pages/Adquisiciones'
+import Clientes          from './modules/ventas/pages/Clientes'
+import NotasVenta        from './modules/ventas/pages/NotasVenta'
+import Equipos           from './modules/reparaciones/pages/Equipos'
 import OrdenesReparacion from './modules/reparaciones/pages/OrdenesReparacion'
-import Diagnosticos   from './modules/reparaciones/pages/Diagnosticos'
-import Cotizaciones   from './modules/reparaciones/pages/Cotizaciones'
+import Diagnosticos      from './modules/reparaciones/pages/Diagnosticos'
+import Cotizaciones      from './modules/reparaciones/pages/Cotizaciones'
 
 function App() {
   return (
@@ -60,6 +61,9 @@ function App() {
 
       <Route path="/compras/proveedores" element={
         <ProtectedRoute permiso="gestionar_compras"><Layout><Proveedores /></Layout></ProtectedRoute>
+      }/>
+      <Route path="/compras/catalogo" element={
+        <ProtectedRoute permiso="gestionar_compras"><Layout><CatalogoProveedor /></Layout></ProtectedRoute>
       }/>
       <Route path="/compras/ordenes" element={
         <ProtectedRoute permiso="gestionar_compras"><Layout><OrdenesCompra /></Layout></ProtectedRoute>

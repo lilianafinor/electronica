@@ -5,6 +5,7 @@ from .nota_compra import NotaCompra
 from .detalle_compra import DetalleCompra
 from .adquisicion import Adquisicion
 from .detalle_adquisicion import DetalleAdquisicion
+from .catalogo_proveedor import CatalogoProveedor
 
 __all__ = [
     'Proveedor',
@@ -14,4 +15,5 @@ __all__ = [
     'DetalleCompra',
     'Adquisicion',
     'DetalleAdquisicion',
+    'CatalogoProveedor',
 ]

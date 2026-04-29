@@ -50,6 +50,61 @@ export const ACTUALIZAR_PROVEEDOR = gql`
   }
 `
 
+export const AGREGAR_ARTICULO_CATALOGO = gql`
+  mutation AgregarArticuloCatalogo(
+    $idProveedor: Int!
+    $idProducto: Int!
+    $precioUnitario: String!
+    $stockDisponible: String!
+  ) {
+    agregarArticuloCatalogo(
+      idProveedor: $idProveedor
+      idProducto: $idProducto
+      precioUnitario: $precioUnitario
+      stockDisponible: $stockDisponible
+    ) {
+      ok
+      mensaje
+      catalogo {
+        idCatalogo
+        precioUnitario
+        stockDisponible
+        idProveedor { nombre }
+        idProducto { nombre }
+      }
+    }
+  }
+`
+
+export const ACTUALIZAR_CATALOGO = gql`
+  mutation ActualizarCatalogo(
+    $idCatalogo: Int!
+    $precioUnitario: String
+    $stockDisponible: String
+    $estado: String
+  ) {
+    actualizarCatalogo(
+      idCatalogo: $idCatalogo
+      precioUnitario: $precioUnitario
+      stockDisponible: $stockDisponible
+      estado: $estado
+    ) {
+      ok
+      mensaje
+      catalogo { idCatalogo precioUnitario stockDisponible estado }
+    }
+  }
+`
+
+export const ELIMINAR_ARTICULO_CATALOGO = gql`
+  mutation EliminarArticuloCatalogo($idCatalogo: Int!) {
+    eliminarArticuloCatalogo(idCatalogo: $idCatalogo) {
+      ok
+      mensaje
+    }
+  }
+`
+
 export const CREAR_ORDEN_COMPRA = gql`
   mutation CrearOrdenCompra(
     $fecha: Date!

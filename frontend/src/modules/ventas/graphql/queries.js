@@ -17,6 +17,20 @@ export const GET_CLIENTES = gql`
   }
 `
 
+export const GET_CLIENTE_POR_NIT = gql`
+  query ClientePorNit($nit: String!) {
+    clientePorNit(nit: $nit) {
+      idCliente
+      nombreCompleto
+      nombre
+      paterno
+      nit
+      telefono
+      correo
+    }
+  }
+`
+
 export const GET_NOTAS_VENTA = gql`
   query {
     notasVenta {

@@ -113,3 +113,15 @@ export const CANCELAR_VENTA = gql`
     }
   }
 `
+
+export const GENERAR_QR_VENTA = gql`
+  mutation GenerarQrVenta($idVenta: Int!) {
+    generarQrVenta(idVenta: $idVenta) {
+      ok
+      mensaje
+      qrUrl
+      urlPasarela
+      idTransaccion
+    }
+  }
+`

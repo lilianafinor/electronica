@@ -15,6 +15,44 @@ export const GET_PROVEEDORES = gql`
   }
 `
 
+export const GET_CATALOGO_PROVEEDOR = gql`
+  query {
+    catalogoProveedor {
+      idCatalogo
+      precioUnitario
+      stockDisponible
+      estado
+      idProveedor { idProveedor nombre }
+      idProducto { idProducto nombre precio idMarca { nombre } idCategoria { nombre } idUnidad { nombre } }
+    }
+  }
+`
+
+export const GET_CATALOGO_POR_PROVEEDOR = gql`
+  query CatalogoPorProveedor($idProveedor: Int!) {
+    catalogoPorProveedor(idProveedor: $idProveedor) {
+      idCatalogo
+      precioUnitario
+      stockDisponible
+      estado
+      idProducto { idProducto nombre precio idMarca { nombre } idCategoria { nombre } idUnidad { nombre } }
+    }
+  }
+`
+
+export const GET_PROVEEDORES_POR_ARTICULO = gql`
+  query ProveedoresPorArticulo($idProducto: Int!) {
+    proveedoresPorArticulo(idProducto: $idProducto) {
+      idCatalogo
+      precioUnitario
+      stockDisponible
+      estado
+      idProveedor { idProveedor nombre telefono email }
+      idProducto { idProducto nombre precio idMarca { nombre } idCategoria { nombre } }
+    }
+  }
+`
+
 export const GET_ORDENES_COMPRA = gql`
   query {
     ordenesCompra {

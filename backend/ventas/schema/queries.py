@@ -30,10 +30,11 @@ class DetalleVentaType(DjangoObjectType):
 
 
 class Query(graphene.ObjectType):
-    clientes    = graphene.List(ClienteType)
-    cliente     = graphene.Field(ClienteType, id_cliente=graphene.Int(required=True))
-    notas_venta = graphene.List(NotaVentaType)
-    nota_venta  = graphene.Field(NotaVentaType, id_venta=graphene.Int(required=True))
+    clientes             = graphene.List(ClienteType)
+    cliente              = graphene.Field(ClienteType, id_cliente=graphene.Int(required=True))
+    cliente_por_nit      = graphene.Field(ClienteType, nit=graphene.String(required=True))
+    notas_venta          = graphene.List(NotaVentaType)
+    nota_venta           = graphene.Field(NotaVentaType, id_venta=graphene.Int(required=True))
 
     def resolve_clientes(root, info):
         return Cliente.objects.filter(estado='activo')
@@ -41,6 +42,12 @@ class Query(graphene.ObjectType):
     def resolve_cliente(root, info, id_cliente):
         try:
             return Cliente.objects.get(pk=id_cliente)
+        except Cliente.DoesNotExist:
+            return None
+
+    def resolve_cliente_por_nit(root, info, nit):
+        try:
+            return Cliente.objects.get(nit=nit, estado='activo')
         except Cliente.DoesNotExist:
             return None
 

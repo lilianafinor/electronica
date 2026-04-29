@@ -1,11 +1,11 @@
 import graphene
 from decimal import Decimal
 from .queries import (
-    ProveedorType, OrdenCompraType, DetalleOrdenCompraType,
+    ProveedorType, CatalogoProveedorType, OrdenCompraType, DetalleOrdenCompraType,
     NotaCompraType, DetalleCompraType, AdquisicionType, DetalleAdquisicionType
 )
 from compras.models import (
-    Proveedor, OrdenCompra, DetalleOrdenCompra,
+    Proveedor, CatalogoProveedor, OrdenCompra, DetalleOrdenCompra,
     NotaCompra, DetalleCompra, Adquisicion, DetalleAdquisicion
 )
 from usuarios.models import Usuario
@@ -59,6 +59,82 @@ class ActualizarProveedor(graphene.Mutation):
             return ActualizarProveedor(proveedor=None, ok=False)
 
 
+# ── CatalogoProveedor ─────────────────────────────────
+class AgregarArticuloCatalogo(graphene.Mutation):
+    class Arguments:
+        id_proveedor     = graphene.Int(required=True)
+        id_producto      = graphene.Int(required=True)
+        precio_unitario  = graphene.String(required=True)
+        stock_disponible = graphene.String(required=True)
+
+    catalogo = graphene.Field(CatalogoProveedorType)
+    ok       = graphene.Boolean()
+    mensaje  = graphene.String()
+
+    def mutate(root, info, id_proveedor, id_producto, precio_unitario, stock_disponible):
+        try:
+            catalogo, creado = CatalogoProveedor.objects.get_or_create(
+                id_proveedor=Proveedor.objects.get(pk=id_proveedor),
+                id_producto=Producto.objects.get(pk=id_producto),
+                defaults={
+                    'precio_unitario':  Decimal(precio_unitario),
+                    'stock_disponible': Decimal(stock_disponible),
+                }
+            )
+            if not creado:
+                catalogo.precio_unitario  = Decimal(precio_unitario)
+                catalogo.stock_disponible = Decimal(stock_disponible)
+                catalogo.save()
+            return AgregarArticuloCatalogo(
+                catalogo=catalogo, ok=True,
+                mensaje='Artículo agregado al catálogo'
+            )
+        except (Proveedor.DoesNotExist, Producto.DoesNotExist):
+            return AgregarArticuloCatalogo(ok=False, mensaje='Proveedor o artículo no encontrado')
+
+
+class ActualizarCatalogo(graphene.Mutation):
+    class Arguments:
+        id_catalogo      = graphene.Int(required=True)
+        precio_unitario  = graphene.String()
+        stock_disponible = graphene.String()
+        estado           = graphene.String()
+
+    catalogo = graphene.Field(CatalogoProveedorType)
+    ok       = graphene.Boolean()
+    mensaje  = graphene.String()
+
+    def mutate(root, info, id_catalogo, precio_unitario=None,
+               stock_disponible=None, estado=None):
+        try:
+            catalogo = CatalogoProveedor.objects.get(pk=id_catalogo)
+            if precio_unitario:
+                catalogo.precio_unitario = Decimal(precio_unitario)
+            if stock_disponible:
+                catalogo.stock_disponible = Decimal(stock_disponible)
+            if estado:
+                catalogo.estado = estado
+            catalogo.save()
+            return ActualizarCatalogo(catalogo=catalogo, ok=True, mensaje='Catálogo actualizado')
+        except CatalogoProveedor.DoesNotExist:
+            return ActualizarCatalogo(catalogo=None, ok=False, mensaje='No encontrado')
+
+
+class EliminarArticuloCatalogo(graphene.Mutation):
+    class Arguments:
+        id_catalogo = graphene.Int(required=True)
+
+    ok      = graphene.Boolean()
+    mensaje = graphene.String()
+
+    def mutate(root, info, id_catalogo):
+        try:
+            CatalogoProveedor.objects.get(pk=id_catalogo).delete()
+            return EliminarArticuloCatalogo(ok=True, mensaje='Artículo eliminado del catálogo')
+        except CatalogoProveedor.DoesNotExist:
+            return EliminarArticuloCatalogo(ok=False, mensaje='No encontrado')
+
+
 # ── OrdenCompra ───────────────────────────────────────
 class CrearOrdenCompra(graphene.Mutation):
     class Arguments:
@@ -106,9 +182,7 @@ class AgregarDetalleOrden(graphene.Mutation):
                 sub_total=sub_total
             )
             orden = detalle.id_orden
-            orden.total = sum(
-                d.sub_total for d in orden.detalles.all()
-            )
+            orden.total = sum(d.sub_total for d in orden.detalles.all())
             orden.save()
             return AgregarDetalleOrden(detalle_orden=detalle, ok=True)
         except (OrdenCompra.DoesNotExist, Producto.DoesNotExist):
@@ -185,9 +259,7 @@ class AgregarDetalleNotaCompra(graphene.Mutation):
                 sub_total=sub_total
             )
             nota = detalle.id_compra
-            nota.total_compra = sum(
-                d.sub_total for d in nota.detalles.all()
-            )
+            nota.total_compra = sum(d.sub_total for d in nota.detalles.all())
             nota.save()
             return AgregarDetalleNotaCompra(detalle_compra=detalle, ok=True)
         except (NotaCompra.DoesNotExist, Producto.DoesNotExist):
@@ -258,7 +330,7 @@ class AgregarDetalleAdquisicion(graphene.Mutation):
 
             return AgregarDetalleAdquisicion(
                 detalle_adquisicion=detalle, ok=True,
-                mensaje='Producto recibido y stock actualizado'
+                mensaje='Artículo recibido y stock actualizado'
             )
         except (Adquisicion.DoesNotExist, Producto.DoesNotExist, Almacen.DoesNotExist):
             return AgregarDetalleAdquisicion(ok=False, mensaje='Datos no encontrados')
@@ -267,6 +339,9 @@ class AgregarDetalleAdquisicion(graphene.Mutation):
 class Mutation(graphene.ObjectType):
     crear_proveedor              = CrearProveedor.Field()
     actualizar_proveedor         = ActualizarProveedor.Field()
+    agregar_articulo_catalogo    = AgregarArticuloCatalogo.Field()
+    actualizar_catalogo          = ActualizarCatalogo.Field()
+    eliminar_articulo_catalogo   = EliminarArticuloCatalogo.Field()
     crear_orden_compra           = CrearOrdenCompra.Field()
     agregar_detalle_orden        = AgregarDetalleOrden.Field()
     actualizar_estado_orden      = ActualizarEstadoOrden.Field()

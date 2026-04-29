@@ -2,7 +2,8 @@ import graphene
 from graphene_django import DjangoObjectType
 from compras.models import (
     Proveedor, OrdenCompra, DetalleOrdenCompra,
-    NotaCompra, DetalleCompra, Adquisicion, DetalleAdquisicion
+    NotaCompra, DetalleCompra, Adquisicion, DetalleAdquisicion,
+    CatalogoProveedor
 )
 
 
@@ -11,6 +12,13 @@ class ProveedorType(DjangoObjectType):
         model = Proveedor
         fields = ('id_proveedor', 'nombre', 'telefono', 'email',
                   'direccion', 'nit', 'contacto', 'fecha_registro', 'estado')
+
+
+class CatalogoProveedorType(DjangoObjectType):
+    class Meta:
+        model = CatalogoProveedor
+        fields = ('id_catalogo', 'precio_unitario', 'stock_disponible',
+                  'estado', 'id_proveedor', 'id_producto')
 
 
 class OrdenCompraType(DjangoObjectType):
@@ -56,14 +64,17 @@ class DetalleAdquisicionType(DjangoObjectType):
 
 
 class Query(graphene.ObjectType):
-    proveedores    = graphene.List(ProveedorType)
-    proveedor      = graphene.Field(ProveedorType, id_proveedor=graphene.Int(required=True))
-    ordenes_compra = graphene.List(OrdenCompraType)
-    orden_compra   = graphene.Field(OrdenCompraType, id_orden=graphene.Int(required=True))
-    notas_compra   = graphene.List(NotaCompraType)
-    nota_compra    = graphene.Field(NotaCompraType, id_compra=graphene.Int(required=True))
-    adquisiciones  = graphene.List(AdquisicionType)
-    adquisicion    = graphene.Field(AdquisicionType, id_adquisicion=graphene.Int(required=True))
+    proveedores              = graphene.List(ProveedorType)
+    proveedor                = graphene.Field(ProveedorType, id_proveedor=graphene.Int(required=True))
+    catalogo_proveedor       = graphene.List(CatalogoProveedorType)
+    catalogo_por_proveedor   = graphene.List(CatalogoProveedorType, id_proveedor=graphene.Int(required=True))
+    proveedores_por_articulo = graphene.List(CatalogoProveedorType, id_producto=graphene.Int(required=True))
+    ordenes_compra           = graphene.List(OrdenCompraType)
+    orden_compra             = graphene.Field(OrdenCompraType, id_orden=graphene.Int(required=True))
+    notas_compra             = graphene.List(NotaCompraType)
+    nota_compra              = graphene.Field(NotaCompraType, id_compra=graphene.Int(required=True))
+    adquisiciones            = graphene.List(AdquisicionType)
+    adquisicion              = graphene.Field(AdquisicionType, id_adquisicion=graphene.Int(required=True))
 
     def resolve_proveedores(root, info):
         return Proveedor.objects.filter(estado='activo')
@@ -74,8 +85,25 @@ class Query(graphene.ObjectType):
         except Proveedor.DoesNotExist:
             return None
 
+    def resolve_catalogo_proveedor(root, info):
+        return CatalogoProveedor.objects.select_related(
+            'id_proveedor', 'id_producto'
+        ).filter(estado='activo')
+
+    def resolve_catalogo_por_proveedor(root, info, id_proveedor):
+        return CatalogoProveedor.objects.select_related(
+            'id_proveedor', 'id_producto'
+        ).filter(id_proveedor=id_proveedor, estado='activo')
+
+    def resolve_proveedores_por_articulo(root, info, id_producto):
+        return CatalogoProveedor.objects.select_related(
+            'id_proveedor', 'id_producto'
+        ).filter(id_producto=id_producto, estado='activo')
+
     def resolve_ordenes_compra(root, info):
-        return OrdenCompra.objects.select_related('id_proveedor', 'id_usuario').prefetch_related('detalles').all()
+        return OrdenCompra.objects.select_related(
+            'id_proveedor', 'id_usuario'
+        ).prefetch_related('detalles').all()
 
     def resolve_orden_compra(root, info, id_orden):
         try:
@@ -84,7 +112,9 @@ class Query(graphene.ObjectType):
             return None
 
     def resolve_notas_compra(root, info):
-        return NotaCompra.objects.select_related('id_proveedor', 'id_usuario').prefetch_related('detalles').all()
+        return NotaCompra.objects.select_related(
+            'id_proveedor', 'id_usuario'
+        ).prefetch_related('detalles').all()
 
     def resolve_nota_compra(root, info, id_compra):
         try:
