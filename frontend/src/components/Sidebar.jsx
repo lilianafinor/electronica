@@ -23,7 +23,6 @@ const INVENTARIO = [
 
 const COMPRAS = [
   { label: 'Proveedores',    path: '/compras/proveedores' },
-  { label: 'Catálogo',       path: '/compras/catalogo' },
   { label: 'Órdenes Compra', path: '/compras/ordenes' },
   { label: 'Notas Compra',   path: '/compras/notas' },
   { label: 'Adquisiciones',  path: '/compras/adquisiciones' },

@@ -1,23 +1,32 @@
 import { useQuery, useMutation } from '@apollo/client'
 import { useState } from 'react'
-import { GET_PRODUCTOS, GET_MARCAS, GET_CATEGORIAS, GET_UNIDADES } from '../graphql/queries'
+import { GET_PRODUCTOS, GET_MARCAS, GET_CATEGORIAS, GET_UNIDADES, GET_PRODUCTOS_ALMACEN } from '../graphql/queries'
 import { CREAR_PRODUCTO, ACTUALIZAR_PRODUCTO } from '../graphql/mutations'
 
 export default function Productos() {
-  const { data, loading, refetch } = useQuery(GET_PRODUCTOS)
-  const { data: dataMarcas }       = useQuery(GET_MARCAS)
-  const { data: dataCategorias }   = useQuery(GET_CATEGORIAS)
-  const { data: dataUnidades }     = useQuery(GET_UNIDADES)
-  const [crearProducto]            = useMutation(CREAR_PRODUCTO)
-  const [actualizarProducto]       = useMutation(ACTUALIZAR_PRODUCTO)
-  const [modo, setModo]            = useState('lista')
+  const { data, loading, refetch }    = useQuery(GET_PRODUCTOS)
+  const { data: dataMarcas }          = useQuery(GET_MARCAS)
+  const { data: dataCategorias }      = useQuery(GET_CATEGORIAS)
+  const { data: dataUnidades }        = useQuery(GET_UNIDADES)
+  const { data: dataStock }           = useQuery(GET_PRODUCTOS_ALMACEN, { fetchPolicy: 'network-only' })
+  const [crearProducto]               = useMutation(CREAR_PRODUCTO)
+  const [actualizarProducto]          = useMutation(ACTUALIZAR_PRODUCTO)
+  const [modo, setModo]               = useState('lista')
   const [productoSel, setProductoSel] = useState(null)
-  const [mensaje, setMensaje]      = useState('')
+  const [mensaje, setMensaje]         = useState('')
 
   const [form, setForm] = useState({
     nombre: '', descripcion: '', precio: '',
     idMarca: '', idCategoria: '', idUnidad: ''
   })
+
+  // Stock total por producto sumando todos los almacenes
+  const getStock = (idProducto) => {
+    return (dataStock?.productosAlmacen || [])
+      .filter((pa) => String(pa.idProducto?.idProducto) === String(idProducto))
+      .reduce((sum, pa) => sum + parseFloat(pa.stock || 0), 0)
+  }
+
 
   const handleCrear = async (e) => {
     e.preventDefault()
@@ -98,7 +107,7 @@ export default function Productos() {
       {(modo === 'nuevo' || modo === 'editar') && (
         <form onSubmit={modo === 'nuevo' ? handleCrear : handleEditar} className="bg-white p-4 rounded-lg shadow mb-6">
           <h3 className="font-semibold text-gray-700 mb-3">
-            {modo === 'nuevo' ? 'Nuevo Artículo' : `Editando: ${productoSel?.nombre}`}
+            {modo === 'nuevo' ? 'Nuevo Artículo' : 'Editando: ' + productoSel?.nombre}
           </h3>
           <div className="grid grid-cols-3 gap-4">
             <div>
@@ -164,31 +173,46 @@ export default function Productos() {
                 <th className="px-4 py-3 text-left">Marca</th>
                 <th className="px-4 py-3 text-left">Categoría</th>
                 <th className="px-4 py-3 text-left">Unidad</th>
+                <th className="px-4 py-3 text-left">Stock</th>
                 <th className="px-4 py-3 text-left">Estado</th>
                 <th className="px-4 py-3 text-left">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {data?.productos.map((p) => (
-                <tr key={p.idProducto} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">{p.idProducto}</td>
-                  <td className="px-4 py-3 font-medium">{p.nombre}</td>
-                  <td className="px-4 py-3">Bs. {p.precio}</td>
-                  <td className="px-4 py-3">{p.idMarca?.nombre || '—'}</td>
-                  <td className="px-4 py-3">{p.idCategoria?.nombre || '—'}</td>
-                  <td className="px-4 py-3">{p.idUnidad?.nombre || '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      p.estado === 'activo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>{p.estado}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button onClick={() => handleSeleccionar(p)} className="text-blue-500 hover:text-blue-700 text-xs">
-                      Editar
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {data?.productos.map((p) => {
+                const stockTotal = getStock(p.idProducto)
+                return (
+                  <tr key={p.idProducto} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">{p.idProducto}</td>
+                    <td className="px-4 py-3 font-medium">{p.nombre}</td>
+                    <td className="px-4 py-3">{'Bs. ' + parseFloat(p.precio).toFixed(2)}</td>
+                    <td className="px-4 py-3">{p.idMarca?.nombre || '—'}</td>
+                    <td className="px-4 py-3">{p.idCategoria?.nombre || '—'}</td>
+                    <td className="px-4 py-3">{p.idUnidad?.nombre || '—'}</td>
+                    <td className="px-4 py-3">
+                      <span className={stockTotal === 0
+                        ? 'px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700'
+                        : stockTotal <= 5
+                        ? 'px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700'
+                        : 'px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700'
+                      }>
+                        {stockTotal}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={p.estado === 'activo'
+                        ? 'px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700'
+                        : 'px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700'
+                      }>{p.estado}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => handleSeleccionar(p)} className="text-blue-500 hover:text-blue-700 text-xs">
+                        Editar
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

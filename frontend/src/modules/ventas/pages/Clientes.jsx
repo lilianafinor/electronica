@@ -107,7 +107,7 @@ export default function Clientes() {
               { label: 'Materno',   key: 'materno',   req: false },
               { label: 'Teléfono', key: 'telefono',  req: false },
               { label: 'Correo',    key: 'correo',    req: false },
-              { label: 'NIT',       key: 'nit',       req: false },
+              { label: 'CI',        key: 'nit',       req: false },
               { label: 'Dirección', key: 'direccion', req: false },
             ].map(({ label, key, req }) => (
               <div key={key}>
@@ -143,7 +143,7 @@ export default function Clientes() {
                 <th className="px-4 py-3 text-left">Nombre</th>
                 <th className="px-4 py-3 text-left">Teléfono</th>
                 <th className="px-4 py-3 text-left">Correo</th>
-                <th className="px-4 py-3 text-left">NIT</th>
+                <th className="px-4 py-3 text-left">CI</th>
                 <th className="px-4 py-3 text-left">Estado</th>
                 <th className="px-4 py-3 text-left">Acciones</th>
               </tr>
