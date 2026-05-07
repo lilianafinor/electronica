@@ -49,9 +49,10 @@ class UsuarioType(DjangoObjectType):
 
     def resolve_permisos(self, info):
         return list(
-            self.rol_permisos.select_related('id_rol_permiso__id_permiso')
+            RolPermisoUsuario.objects.filter(id_usuario=self)
             .values_list('id_rol_permiso__id_permiso__nombre', flat=True)
         )
+
 
 class RolPermisoUsuarioType(DjangoObjectType):
     class Meta:
@@ -60,15 +61,15 @@ class RolPermisoUsuarioType(DjangoObjectType):
 
 
 class Query(graphene.ObjectType):
-    roles                    = graphene.List(RolType)
-    rol                      = graphene.Field(RolType, id_rol=graphene.Int(required=True))
-    permisos                 = graphene.List(PermisoType)
-    permiso                  = graphene.Field(PermisoType, id_permiso=graphene.Int(required=True))
-    roles_permisos           = graphene.List(RolPermisoType)
-    usuarios                 = graphene.List(UsuarioType)
-    usuario                  = graphene.Field(UsuarioType, id_usuario=graphene.Int(required=True))
-    politica_contrasena      = graphene.Field(PoliticaContrasenaType)
-    roles_permisos_usuarios  = graphene.List(RolPermisoUsuarioType)
+    roles                   = graphene.List(RolType)
+    rol                     = graphene.Field(RolType, id_rol=graphene.Int(required=True))
+    permisos                = graphene.List(PermisoType)
+    permiso                 = graphene.Field(PermisoType, id_permiso=graphene.Int(required=True))
+    roles_permisos          = graphene.List(RolPermisoType)
+    usuarios                = graphene.List(UsuarioType)
+    usuario                 = graphene.Field(UsuarioType, id_usuario=graphene.Int(required=True))
+    politica_contrasena     = graphene.Field(PoliticaContrasenaType)
+    roles_permisos_usuarios = graphene.List(RolPermisoUsuarioType)
 
     def resolve_roles(root, info):
         return Rol.objects.filter(estado='activo')

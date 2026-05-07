@@ -217,3 +217,22 @@ export const AGREGAR_DETALLE_TRASPASO = gql`
     }
   }
 `
+
+export const ACTUALIZAR_LIMITES_STOCK = gql`
+  mutation ActualizarLimitesStock(
+    $idProducto: Int!
+    $idAlmacen: Int!
+    $stockMin: String
+    $stockMax: String
+  ) {
+    actualizarLimitesStock(
+      idProducto: $idProducto
+      idAlmacen: $idAlmacen
+      stockMin: $stockMin
+      stockMax: $stockMax
+    ) {
+      ok
+      mensaje
+    }
+  }
+`

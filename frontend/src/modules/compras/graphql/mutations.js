@@ -149,6 +149,15 @@ export const AGREGAR_DETALLE_ORDEN = gql`
   }
 `
 
+export const ELIMINAR_DETALLE_ORDEN = gql`
+  mutation EliminarDetalleOrden($idDetalleOrden: Int!) {
+    eliminarDetalleOrden(idDetalleOrden: $idDetalleOrden) {
+      ok
+      mensaje
+    }
+  }
+`
+
 export const ACTUALIZAR_ESTADO_ORDEN = gql`
   mutation ActualizarEstadoOrden($idOrden: Int!, $estado: String!) {
     actualizarEstadoOrden(idOrden: $idOrden, estado: $estado) {
@@ -185,23 +194,19 @@ export const AGREGAR_DETALLE_NOTA_COMPRA = gql`
   mutation AgregarDetalleNotaCompra(
     $idCompra: Int!
     $idProducto: Int!
+    $idAlmacen: Int!
     $cantidad: String!
     $precioUni: String!
   ) {
     agregarDetalleNotaCompra(
       idCompra: $idCompra
       idProducto: $idProducto
+      idAlmacen: $idAlmacen
       cantidad: $cantidad
       precioUni: $precioUni
     ) {
       ok
-      detalleCompra {
-        idDetalleCompra
-        cantidad
-        precioUni
-        subTotal
-        idProducto { nombre }
-      }
+      mensaje
     }
   }
 `

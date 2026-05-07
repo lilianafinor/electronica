@@ -105,6 +105,15 @@ export const AGREGAR_DETALLE_VENTA = gql`
   }
 `
 
+export const ELIMINAR_DETALLE_VENTA = gql`
+  mutation EliminarDetalleVenta($idDetalleVenta: Int!) {
+    eliminarDetalleVenta(idDetalleVenta: $idDetalleVenta) {
+      ok
+      mensaje
+    }
+  }
+`
+
 export const CANCELAR_VENTA = gql`
   mutation CancelarVenta($idVenta: Int!) {
     cancelarVenta(idVenta: $idVenta) {

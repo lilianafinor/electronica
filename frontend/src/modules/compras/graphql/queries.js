@@ -68,7 +68,7 @@ export const GET_ORDENES_COMPRA = gql`
         cantidad
         precioUni
         subTotal
-        idProducto { nombre }
+        idProducto { idProducto nombre }
       }
     }
   }

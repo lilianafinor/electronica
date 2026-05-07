@@ -392,20 +392,48 @@ class AgregarDetalleTraspaso(graphene.Mutation):
             return AgregarDetalleTraspaso(ok=False, mensaje='Artículo no existe en almacén origen')
 
 
+# ── Límites de stock ──────────────────────────────────
+class ActualizarLimitesStock(graphene.Mutation):
+    class Arguments:
+        id_producto = graphene.Int(required=True)
+        id_almacen  = graphene.Int(required=True)
+        stock_min   = graphene.String()
+        stock_max   = graphene.String()
+
+    ok      = graphene.Boolean()
+    mensaje = graphene.String()
+
+    def mutate(root, info, id_producto, id_almacen, stock_min=None, stock_max=None):
+        try:
+            pa = ProductoAlmacen.objects.get(
+                id_producto=id_producto,
+                id_almacen=id_almacen
+            )
+            if stock_min is not None:
+                pa.stock_min = Decimal(stock_min)
+            if stock_max is not None:
+                pa.stock_max = Decimal(stock_max)
+            pa.save()
+            return ActualizarLimitesStock(ok=True, mensaje='Límites actualizados')
+        except ProductoAlmacen.DoesNotExist:
+            return ActualizarLimitesStock(ok=False, mensaje='Registro no encontrado')
+
+
 class Mutation(graphene.ObjectType):
-    crear_almacen            = CrearAlmacen.Field()
-    actualizar_almacen       = ActualizarAlmacen.Field()
-    crear_marca              = CrearMarca.Field()
-    actualizar_marca         = ActualizarMarca.Field()
-    crear_categoria          = CrearCategoria.Field()
-    actualizar_categoria     = ActualizarCategoria.Field()
-    crear_unidad_medida      = CrearUnidadMedida.Field()
-    crear_ges_precio         = CrearGesPrecio.Field()
-    crear_producto           = CrearProducto.Field()
-    actualizar_producto      = ActualizarProducto.Field()
-    crear_nota_ingreso       = CrearNotaIngreso.Field()
-    agregar_detalle_ingreso  = AgregarDetalleIngreso.Field()
-    crear_nota_egreso        = CrearNotaEgreso.Field()
-    agregar_detalle_egreso   = AgregarDetalleEgreso.Field()
-    crear_traspaso           = CrearTraspaso.Field()
-    agregar_detalle_traspaso = AgregarDetalleTraspaso.Field()
+    crear_almacen              = CrearAlmacen.Field()
+    actualizar_almacen         = ActualizarAlmacen.Field()
+    crear_marca                = CrearMarca.Field()
+    actualizar_marca           = ActualizarMarca.Field()
+    crear_categoria            = CrearCategoria.Field()
+    actualizar_categoria       = ActualizarCategoria.Field()
+    crear_unidad_medida        = CrearUnidadMedida.Field()
+    crear_ges_precio           = CrearGesPrecio.Field()
+    crear_producto             = CrearProducto.Field()
+    actualizar_producto        = ActualizarProducto.Field()
+    crear_nota_ingreso         = CrearNotaIngreso.Field()
+    agregar_detalle_ingreso    = AgregarDetalleIngreso.Field()
+    crear_nota_egreso          = CrearNotaEgreso.Field()
+    agregar_detalle_egreso     = AgregarDetalleEgreso.Field()
+    crear_traspaso             = CrearTraspaso.Field()
+    agregar_detalle_traspaso   = AgregarDetalleTraspaso.Field()
+    actualizar_limites_stock   = ActualizarLimitesStock.Field()

@@ -1,9 +1,14 @@
 import graphene
 from decimal import Decimal
+from datetime import date
 from .queries import ClienteType, NotaVentaType, DetalleVentaType
 from ventas.models import Cliente, NotaVenta, DetalleVenta
 from usuarios.models import Usuario
-from inventario.models import Producto, Almacen, ProductoAlmacen
+from inventario.models import (
+    Producto, Almacen, ProductoAlmacen,
+    NotaEgreso, DetalleEgreso,
+    NotaIngreso, DetalleIngreso,
+)
 from ventas.libelula import registrar_deuda_venta
 
 
@@ -68,7 +73,7 @@ class CrearNotaVenta(graphene.Mutation):
     mensaje    = graphene.String()
 
     def mutate(root, info, fecha_venta, id_cliente,
-               glosa=None, tipo_pago='qr', id_usuario=None):
+               glosa=None, tipo_pago='contado', id_usuario=None):
         try:
             venta = NotaVenta.objects.create(
                 fecha_venta=fecha_venta,
@@ -107,20 +112,41 @@ class AgregarDetalleVenta(graphene.Mutation):
             if prod_almacen.stock < cantidad:
                 return AgregarDetalleVenta(ok=False, mensaje='Stock insuficiente')
 
+            venta    = NotaVenta.objects.get(pk=id_venta)
+            producto = Producto.objects.get(pk=id_producto)
+            almacen  = Almacen.objects.get(pk=id_almacen)
+
             detalle = DetalleVenta.objects.create(
-                id_venta=NotaVenta.objects.get(pk=id_venta),
-                id_producto=Producto.objects.get(pk=id_producto),
-                id_almacen=Almacen.objects.get(pk=id_almacen),
+                id_venta=venta,
+                id_producto=producto,
+                id_almacen=almacen,
                 cantidad=cantidad,
                 precio_uni=precio_uni,
                 precio_subtotal=subtotal
             )
+
+            # Descontar stock
             prod_almacen.stock = prod_almacen.stock - cantidad
             prod_almacen.save()
 
-            venta = detalle.id_venta
+            # Actualizar monto total
             venta.monto_total = sum(d.precio_subtotal for d in venta.detalles.all())
             venta.save()
+
+            # Egreso automático por venta
+            nota_egreso = NotaEgreso.objects.create(
+                fecha=date.today(),
+                glosa='Egreso por venta #' + str(id_venta),
+                motivo='venta',
+                id_usuario=venta.id_usuario,
+            )
+            DetalleEgreso.objects.create(
+                id_egreso=nota_egreso,
+                id_producto=producto,
+                id_almacen=almacen,
+                cantidad=cantidad,
+                observacion='Venta #' + str(id_venta),
+            )
 
             return AgregarDetalleVenta(
                 detalle_venta=detalle, ok=True,
@@ -130,6 +156,39 @@ class AgregarDetalleVenta(graphene.Mutation):
             return AgregarDetalleVenta(ok=False, mensaje='Producto no existe en ese almacén')
         except (NotaVenta.DoesNotExist, Producto.DoesNotExist, Almacen.DoesNotExist):
             return AgregarDetalleVenta(ok=False, mensaje='Datos no encontrados')
+
+
+class EliminarDetalleVenta(graphene.Mutation):
+    class Arguments:
+        id_detalle_venta = graphene.Int(required=True)
+
+    ok      = graphene.Boolean()
+    mensaje = graphene.String()
+
+    def mutate(root, info, id_detalle_venta):
+        try:
+            detalle = DetalleVenta.objects.get(pk=id_detalle_venta)
+            venta   = detalle.id_venta
+
+            # Restaurar stock
+            prod_almacen = ProductoAlmacen.objects.get(
+                id_producto=detalle.id_producto,
+                id_almacen=detalle.id_almacen
+            )
+            prod_almacen.stock = prod_almacen.stock + detalle.cantidad
+            prod_almacen.save()
+
+            detalle.delete()
+
+            # Recalcular monto total
+            venta.monto_total = sum(d.precio_subtotal for d in venta.detalles.all())
+            venta.save()
+
+            return EliminarDetalleVenta(ok=True, mensaje='Artículo eliminado y stock restaurado')
+        except DetalleVenta.DoesNotExist:
+            return EliminarDetalleVenta(ok=False, mensaje='Detalle no encontrado')
+        except ProductoAlmacen.DoesNotExist:
+            return EliminarDetalleVenta(ok=False, mensaje='Stock no encontrado')
 
 
 class CancelarVenta(graphene.Mutation):
@@ -144,19 +203,38 @@ class CancelarVenta(graphene.Mutation):
             venta        = NotaVenta.objects.get(pk=id_venta)
             venta.estado = 'cancelado'
             venta.save()
+
+            # Crear una sola nota de ingreso por devolución para toda la venta
+            nota_ingreso = NotaIngreso.objects.create(
+                fecha=date.today(),
+                glosa='Devolución por cancelación de venta #' + str(id_venta),
+                motivo='devolucion',
+                id_usuario=venta.id_usuario,
+            )
+
             for detalle in venta.detalles.all():
+                # Restaurar stock
                 prod_almacen = ProductoAlmacen.objects.get(
                     id_producto=detalle.id_producto,
                     id_almacen=detalle.id_almacen
                 )
                 prod_almacen.stock = prod_almacen.stock + detalle.cantidad
                 prod_almacen.save()
+
+                # Agregar detalle al ingreso por devolución
+                DetalleIngreso.objects.create(
+                    id_ingreso=nota_ingreso,
+                    id_producto=detalle.id_producto,
+                    id_almacen=detalle.id_almacen,
+                    cantidad=detalle.cantidad,
+                    observacion='Devolución — Venta #' + str(id_venta),
+                )
+
             return CancelarVenta(ok=True, mensaje='Venta cancelada y stock restaurado')
         except NotaVenta.DoesNotExist:
             return CancelarVenta(ok=False, mensaje='Venta no encontrada')
 
 
-# ── Nueva mutation: Generar QR con Libélula ───────────────────────────────────
 class GenerarQrVenta(graphene.Mutation):
     class Arguments:
         id_venta = graphene.Int(required=True)
@@ -188,7 +266,6 @@ class GenerarQrVenta(graphene.Mutation):
             resultado = registrar_deuda_venta(venta)
 
             if resultado['ok']:
-                # Guardar id_transaccion en glosa para trazabilidad
                 if resultado['id_transaccion']:
                     venta.glosa = (venta.glosa or '') + f" | TXN:{resultado['id_transaccion']}"
                     venta.tipo_pago = 'qr'
@@ -209,9 +286,10 @@ class GenerarQrVenta(graphene.Mutation):
 
 
 class Mutation(graphene.ObjectType):
-    crear_cliente         = CrearCliente.Field()
-    actualizar_cliente    = ActualizarCliente.Field()
-    crear_nota_venta      = CrearNotaVenta.Field()
-    agregar_detalle_venta = AgregarDetalleVenta.Field()
-    cancelar_venta        = CancelarVenta.Field()
-    generar_qr_venta      = GenerarQrVenta.Field()
+    crear_cliente          = CrearCliente.Field()
+    actualizar_cliente     = ActualizarCliente.Field()
+    crear_nota_venta       = CrearNotaVenta.Field()
+    agregar_detalle_venta  = AgregarDetalleVenta.Field()
+    eliminar_detalle_venta = EliminarDetalleVenta.Field()
+    cancelar_venta         = CancelarVenta.Field()
+    generar_qr_venta       = GenerarQrVenta.Field()

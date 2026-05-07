@@ -189,6 +189,25 @@ class AgregarDetalleOrden(graphene.Mutation):
             return AgregarDetalleOrden(detalle_orden=None, ok=False)
 
 
+class EliminarDetalleOrden(graphene.Mutation):
+    class Arguments:
+        id_detalle_orden = graphene.Int(required=True)
+
+    ok      = graphene.Boolean()
+    mensaje = graphene.String()
+
+    def mutate(root, info, id_detalle_orden):
+        try:
+            detalle = DetalleOrdenCompra.objects.get(pk=id_detalle_orden)
+            orden   = detalle.id_orden
+            detalle.delete()
+            orden.total = sum(d.sub_total for d in orden.detalles.all())
+            orden.save()
+            return EliminarDetalleOrden(ok=True, mensaje='Artículo eliminado de la orden')
+        except DetalleOrdenCompra.DoesNotExist:
+            return EliminarDetalleOrden(ok=False, mensaje='Detalle no encontrado')
+
+
 class ActualizarEstadoOrden(graphene.Mutation):
     class Arguments:
         id_orden = graphene.Int(required=True)
@@ -344,6 +363,7 @@ class Mutation(graphene.ObjectType):
     eliminar_articulo_catalogo   = EliminarArticuloCatalogo.Field()
     crear_orden_compra           = CrearOrdenCompra.Field()
     agregar_detalle_orden        = AgregarDetalleOrden.Field()
+    eliminar_detalle_orden       = EliminarDetalleOrden.Field()
     actualizar_estado_orden      = ActualizarEstadoOrden.Field()
     crear_nota_compra            = CrearNotaCompra.Field()
     agregar_detalle_nota_compra  = AgregarDetalleNotaCompra.Field()

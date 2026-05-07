@@ -5,10 +5,20 @@ import { GET_PRODUCTOS, GET_PRODUCTOS_ALMACEN } from '../../inventario/graphql/q
 import {
   CREAR_NOTA_VENTA,
   AGREGAR_DETALLE_VENTA,
+  ELIMINAR_DETALLE_VENTA,
   CANCELAR_VENTA,
   CREAR_CLIENTE,
   GENERAR_QR_VENTA,
 } from '../graphql/mutations'
+
+// Fecha local Bolivia (UTC-4) sin desfase
+const fechaLocal = () => {
+  const now = new Date()
+  const y   = now.getFullYear()
+  const m   = String(now.getMonth() + 1).padStart(2, '0')
+  const d   = String(now.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
 
 function ModalQR({ qrUrl, urlPasarela, idTransaccion, montoTotal, onCerrar }) {
   return (
@@ -19,7 +29,7 @@ function ModalQR({ qrUrl, urlPasarela, idTransaccion, montoTotal, onCerrar }) {
           <button onClick={onCerrar} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',color:'#9ca3af'}}>X</button>
         </div>
         <div style={{textAlign:'center',marginBottom:16}}>
-          <div style={{fontSize:24,fontWeight:700,color:'#059669'}}>{"Bs. " + parseFloat(montoTotal).toFixed(2)}</div>
+          <div style={{fontSize:24,fontWeight:700,color:'#059669'}}>{'Bs. ' + parseFloat(montoTotal).toFixed(2)}</div>
           <div style={{fontSize:13,color:'#6b7280',marginTop:4}}>Escanea el QR para pagar</div>
         </div>
         {qrUrl
@@ -37,7 +47,7 @@ function ModalQR({ qrUrl, urlPasarela, idTransaccion, montoTotal, onCerrar }) {
               Abrir pasarela de pago
             </a>
           )}
-          <div style={{fontSize:11,color:'#9ca3af',textAlign:'center'}}>{"ID: " + idTransaccion}</div>
+          <div style={{fontSize:11,color:'#9ca3af',textAlign:'center'}}>{'ID: ' + idTransaccion}</div>
           <button onClick={onCerrar}
             style={{background:'#f3f4f6',border:'none',borderRadius:8,padding:'8px 0',cursor:'pointer',fontSize:14,color:'#374151'}}>
             Cerrar
@@ -52,31 +62,37 @@ export default function NotasVenta() {
   const { data, loading, refetch }                 = useQuery(GET_NOTAS_VENTA, { fetchPolicy: 'network-only' })
   const { data: dataProductos }                    = useQuery(GET_PRODUCTOS, { fetchPolicy: 'network-only' })
   const { data: dataStock, refetch: refetchStock } = useQuery(GET_PRODUCTOS_ALMACEN, { fetchPolicy: 'network-only' })
-  const [crearVenta]                               = useMutation(CREAR_NOTA_VENTA)
-  const [agregarDetalle]                           = useMutation(AGREGAR_DETALLE_VENTA)
-  const [cancelarVenta]                            = useMutation(CANCELAR_VENTA)
-  const [crearCliente]                             = useMutation(CREAR_CLIENTE)
-  const [generarQr]                                = useMutation(GENERAR_QR_VENTA)
-  const [buscarClientePorNit]                      = useLazyQuery(GET_CLIENTE_POR_NIT, { fetchPolicy: 'network-only' })
 
-  const [modo, setModo]                         = useState('lista')
-  const [ventaId, setVentaId]                   = useState(null)
-  const [detallesLocales, setDetallesLocales]   = useState([])
-  const [montoLocal, setMontoLocal]             = useState(0)
-  const [mensaje, setMensaje]                   = useState('')
+  const [crearVenta]           = useMutation(CREAR_NOTA_VENTA)
+  const [agregarDetalle]       = useMutation(AGREGAR_DETALLE_VENTA)
+  const [eliminarDetalle]      = useMutation(ELIMINAR_DETALLE_VENTA)
+  const [cancelarVenta]        = useMutation(CANCELAR_VENTA)
+  const [crearCliente]         = useMutation(CREAR_CLIENTE)
+  const [generarQr]            = useMutation(GENERAR_QR_VENTA)
+  const [buscarClientePorNit]  = useLazyQuery(GET_CLIENTE_POR_NIT, { fetchPolicy: 'network-only' })
+
+  const [modo, setModo]                           = useState('lista')
+  const [ventaId, setVentaId]                     = useState(null)
+  const [detallesLocales, setDetallesLocales]     = useState([])
+  const [montoLocal, setMontoLocal]               = useState(0)
+  const [mensaje, setMensaje]                     = useState('')
   const [mostrarNuevoCliente, setMostrarNuevoCliente] = useState(false)
-  const [modalQR, setModalQR]                   = useState(null)
-  const [nitBusqueda, setNitBusqueda]           = useState('')
+  const [modalQR, setModalQR]                     = useState(null)
+  const [nitBusqueda, setNitBusqueda]             = useState('')
   const [clienteEncontrado, setClienteEncontrado] = useState(null)
-  const [buscando, setBuscando]                 = useState(false)
+  const [buscando, setBuscando]                   = useState(false)
+  const [tipoPagoActual, setTipoPagoActual]       = useState('contado')
 
   const usuario = JSON.parse(localStorage.getItem('usuario') || 'null')
-  const hoy = new Date().toISOString().split('T')[0]
+  const hoy     = fechaLocal()
 
-  const [formVenta, setFormVenta] = useState({ fechaVenta: hoy, idCliente: '', glosa: '' })
+  const [formVenta, setFormVenta] = useState({
+    fechaVenta: hoy, idCliente: '', glosa: '', tipoPago: 'contado'
+  })
   const [formDetalle, setFormDetalle] = useState({
     idProducto: '', idAlmacen: '', cantidad: '', precioUni: '',
-    unidad: '', esEntero: true, stockDisponible: 0, nombreProducto: '', nombreAlmacen: ''
+    unidad: '', esEntero: true, stockDisponible: 0,
+    nombreProducto: '', nombreAlmacen: ''
   })
   const [formCliente, setFormCliente] = useState({
     nombre: '', paterno: '', materno: '', telefono: '', correo: '', nit: ''
@@ -91,7 +107,9 @@ export default function NotasVenta() {
 
   const resetModo = () => {
     setModo('lista'); setVentaId(null); setDetallesLocales([]); setMontoLocal(0)
-    setMensaje(''); setClienteEncontrado(null); setNitBusqueda(''); setMostrarNuevoCliente(false)
+    setMensaje(''); setClienteEncontrado(null); setNitBusqueda('')
+    setMostrarNuevoCliente(false); setTipoPagoActual('contado')
+    setFormVenta({ fechaVenta: hoy, idCliente: '', glosa: '', tipoPago: 'contado' })
   }
 
   const handleBuscarNit = async () => {
@@ -139,18 +157,30 @@ export default function NotasVenta() {
       (x) => String(x.idProducto?.idProducto) === String(formDetalle.idProducto) &&
               String(x.idAlmacen?.idAlmacen) === String(idAlmacen)
     )
-    setFormDetalle((p) => ({ ...p, idAlmacen, nombreAlmacen: pa?.idAlmacen?.nombre || '', stockDisponible: pa ? parseFloat(pa.stock) : 0 }))
+    setFormDetalle((p) => ({
+      ...p, idAlmacen,
+      nombreAlmacen:   pa?.idAlmacen?.nombre || '',
+      stockDisponible: pa ? parseFloat(pa.stock) : 0
+    }))
   }
 
   const handleCrearVenta = async () => {
     if (!formVenta.idCliente) { setMensaje('Debes seleccionar un cliente'); return }
     try {
       const { data: res } = await crearVenta({
-        variables: { fechaVenta: formVenta.fechaVenta, idCliente: parseInt(formVenta.idCliente), glosa: formVenta.glosa || null, tipoPago: 'qr', idUsuario: parseInt(usuario?.idUsuario) }
+        variables: {
+          fechaVenta: formVenta.fechaVenta,
+          idCliente:  parseInt(formVenta.idCliente),
+          glosa:      formVenta.glosa || null,
+          tipoPago:   formVenta.tipoPago,
+          idUsuario:  parseInt(usuario?.idUsuario),
+        }
       })
       if (res.crearNotaVenta.ok) {
         setVentaId(String(res.crearNotaVenta.notaVenta.idVenta))
-        setDetallesLocales([]); setMontoLocal(0); setModo('detalle'); setMensaje('')
+        setTipoPagoActual(formVenta.tipoPago)
+        setDetallesLocales([]); setMontoLocal(0)
+        setModo('detalle'); setMensaje('')
         refetch(); refetchStock()
       } else { setMensaje(res.crearNotaVenta.mensaje) }
     } catch (err) { setMensaje('Error: ' + err.message) }
@@ -162,17 +192,49 @@ export default function NotasVenta() {
     }
     try {
       const { data: res } = await agregarDetalle({
-        variables: { idVenta: parseInt(ventaId), idProducto: parseInt(formDetalle.idProducto), idAlmacen: parseInt(formDetalle.idAlmacen), cantidad: String(formDetalle.cantidad), precioUni: String(formDetalle.precioUni) }
+        variables: {
+          idVenta:    parseInt(ventaId),
+          idProducto: parseInt(formDetalle.idProducto),
+          idAlmacen:  parseInt(formDetalle.idAlmacen),
+          cantidad:   String(formDetalle.cantidad),
+          precioUni:  String(formDetalle.precioUni),
+        }
       })
       if (res.agregarDetalleVenta.ok) {
-        const cant = parseFloat(formDetalle.cantidad)
+        const cant   = parseFloat(formDetalle.cantidad)
         const precio = parseFloat(formDetalle.precioUni)
-        setDetallesLocales((prev) => [...prev, { id: Date.now(), nombreProducto: formDetalle.nombreProducto, nombreAlmacen: formDetalle.nombreAlmacen, cantidad: cant, precioUni: precio, subtotal: cant * precio }])
+        const idDet  = res.agregarDetalleVenta.detalleVenta.idDetalleVenta
+        setDetallesLocales((prev) => [...prev, {
+          id:             idDet,
+          idDetalleVenta: idDet,
+          nombreProducto: formDetalle.nombreProducto,
+          nombreAlmacen:  formDetalle.nombreAlmacen,
+          idProducto:     formDetalle.idProducto,
+          idAlmacen:      formDetalle.idAlmacen,
+          cantidad:       cant,
+          precioUni:      precio,
+          subtotal:       cant * precio,
+        }])
         setMontoLocal((prev) => prev + cant * precio)
         setFormDetalle({ idProducto: '', idAlmacen: '', cantidad: '', precioUni: '', unidad: '', esEntero: true, stockDisponible: 0, nombreProducto: '', nombreAlmacen: '' })
-        setMensaje('Articulo agregado correctamente')
+        setMensaje('Artículo agregado correctamente')
         refetchStock()
       } else { setMensaje(res.agregarDetalleVenta.mensaje) }
+    } catch (err) { setMensaje('Error: ' + err.message) }
+  }
+
+  const handleEliminarDetalle = async (detalle) => {
+    if (!confirm('¿Eliminar este artículo del detalle? Se restaurará el stock.')) return
+    try {
+      const { data: res } = await eliminarDetalle({
+        variables: { idDetalleVenta: parseInt(detalle.idDetalleVenta) }
+      })
+      if (res.eliminarDetalleVenta.ok) {
+        setDetallesLocales((prev) => prev.filter((d) => d.idDetalleVenta !== detalle.idDetalleVenta))
+        setMontoLocal((prev) => prev - detalle.subtotal)
+        setMensaje('Artículo eliminado y stock restaurado')
+        refetchStock()
+      } else { setMensaje(res.eliminarDetalleVenta.mensaje) }
     } catch (err) { setMensaje('Error: ' + err.message) }
   }
 
@@ -187,11 +249,23 @@ export default function NotasVenta() {
     } catch (err) { setMensaje('Error: ' + err.message) }
   }
 
+  const handleConfirmarContado = () => {
+    setMensaje('Venta al contado confirmada correctamente.')
+    setTimeout(() => { resetModo(); refetch() }, 1500)
+  }
+
   const handleCrearCliente = async () => {
     if (!formCliente.nombre) { setMensaje('El nombre es requerido'); return }
     try {
       const { data: res } = await crearCliente({
-        variables: { nombre: formCliente.nombre, paterno: formCliente.paterno || null, materno: formCliente.materno || null, telefono: formCliente.telefono || null, correo: formCliente.correo || null, nit: formCliente.nit || null }
+        variables: {
+          nombre:   formCliente.nombre,
+          paterno:  formCliente.paterno  || null,
+          materno:  formCliente.materno  || null,
+          telefono: formCliente.telefono || null,
+          correo:   formCliente.correo   || null,
+          nit:      formCliente.nit      || null,
+        }
       })
       if (res.crearCliente.ok) {
         const nuevo = res.crearCliente.cliente
@@ -206,7 +280,7 @@ export default function NotasVenta() {
   }
 
   const handleCancelar = async (idVenta) => {
-    if (!confirm('Cancelar esta venta? Se restaurara el stock.')) return
+    if (!confirm('¿Cancelar esta venta? Se restaurará el stock.')) return
     try {
       const { data: res } = await cancelarVenta({ variables: { idVenta: parseInt(idVenta) } })
       setMensaje(res.cancelarVenta.mensaje); refetch(); refetchStock()
@@ -240,6 +314,7 @@ export default function NotasVenta() {
         </button>
       </div>
 
+      {/* ── Nueva venta ───────────────────────────────────────────────────── */}
       {modo === 'nuevo' && (
         <div className="bg-white p-4 rounded-lg shadow mb-6">
           <div className="text-base font-semibold text-gray-700 mb-4">Nueva Venta</div>
@@ -263,12 +338,10 @@ export default function NotasVenta() {
             <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
               <div>
                 <div className="text-sm font-semibold text-green-800">{clienteEncontrado.nombreCompleto}</div>
-                <div className="text-xs text-green-600">{"NIT: " + (clienteEncontrado.nit || '—') + " | Tel: " + (clienteEncontrado.telefono || '—')}</div>
+                <div className="text-xs text-green-600">{'NIT: ' + (clienteEncontrado.nit || '—') + ' | Tel: ' + (clienteEncontrado.telefono || '—')}</div>
               </div>
               <button onClick={() => { setClienteEncontrado(null); setFormVenta((p) => ({ ...p, idCliente: '' })); setNitBusqueda('') }}
-                className="text-xs text-red-400 hover:text-red-600">
-                Cambiar
-              </button>
+                className="text-xs text-red-400 hover:text-red-600">Cambiar</button>
             </div>
           )}
 
@@ -283,7 +356,7 @@ export default function NotasVenta() {
             <div className="mb-4 p-4 border border-blue-200 rounded-lg bg-blue-50">
               <div className="font-semibold text-blue-700 mb-3">Registrar Nuevo Cliente</div>
               <div className="grid grid-cols-3 gap-3">
-                {[['Nombre','nombre'],['Paterno','paterno'],['Materno','materno'],['CI / NIT','nit'],['Telefono','telefono'],['Correo','correo']].map(([lbl, key]) => (
+                {[['Nombre','nombre'],['Paterno','paterno'],['Materno','materno'],['CI / NIT','nit'],['Teléfono','telefono'],['Correo','correo']].map(([lbl, key]) => (
                   <div key={key}>
                     <div className="text-sm text-gray-600 mb-1">{lbl}</div>
                     <input type="text" value={formCliente[key]}
@@ -307,8 +380,12 @@ export default function NotasVenta() {
             </div>
             <div>
               <div className="text-sm text-gray-600 mb-1">Tipo de Pago</div>
-              <input type="text" value="QR" readOnly
-                className="w-full border rounded-lg px-3 py-2 text-sm bg-gray-100 cursor-not-allowed" />
+              <select value={formVenta.tipoPago}
+                onChange={(e) => setFormVenta({ ...formVenta, tipoPago: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="contado">Contado (efectivo)</option>
+                <option value="qr">QR</option>
+              </select>
             </div>
             <div>
               <div className="text-sm text-gray-600 mb-1">Glosa</div>
@@ -327,13 +404,23 @@ export default function NotasVenta() {
         </div>
       )}
 
+      {/* ── Agregar artículos ──────────────────────────────────────────────── */}
       {modo === 'detalle' && ventaId && (
         <div className="bg-white p-4 rounded-lg shadow mb-6">
-          <div className="font-semibold text-gray-700 mb-4">{"Agregar articulos a Venta #" + ventaId}</div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="font-semibold text-gray-700">{'Agregar artículos — Venta #' + ventaId}</div>
+            <span className={
+              tipoPagoActual === 'qr'
+                ? 'text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-semibold'
+                : 'text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold'
+            }>
+              {tipoPagoActual === 'qr' ? 'Pago: QR' : 'Pago: Contado (efectivo)'}
+            </span>
+          </div>
 
           <div className="grid grid-cols-4 gap-4">
             <div>
-              <div className="text-sm text-gray-600 mb-1">Articulo</div>
+              <div className="text-sm text-gray-600 mb-1">Artículo</div>
               <select value={formDetalle.idProducto} onChange={(e) => handleProductoChange(e.target.value)}
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">-- Selecciona --</option>
@@ -344,7 +431,7 @@ export default function NotasVenta() {
             </div>
 
             <div>
-              <div className="text-sm text-gray-600 mb-1">Almacen</div>
+              <div className="text-sm text-gray-600 mb-1">Almacén</div>
               {almacenesActuales.length > 1 ? (
                 <select value={formDetalle.idAlmacen} onChange={(e) => handleAlmacenChange(e.target.value)}
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -366,7 +453,7 @@ export default function NotasVenta() {
                 <div className="text-sm text-gray-600">{etiquetaCantidad}</div>
                 {formDetalle.idProducto && (
                   <div className={formDetalle.stockDisponible <= 5 ? 'text-xs font-semibold text-red-500' : 'text-xs font-semibold text-green-600'}>
-                    {"Stock: " + formDetalle.stockDisponible}
+                    {'Stock: ' + formDetalle.stockDisponible}
                   </div>
                 )}
               </div>
@@ -387,22 +474,24 @@ export default function NotasVenta() {
           {formDetalle.idProducto && formDetalle.cantidad && formDetalle.precioUni && (
             <div className="mt-3 p-3 bg-blue-50 rounded-lg">
               <div className="text-sm text-blue-700 font-medium">
-                {"Subtotal: Bs. " + (parseFloat(formDetalle.cantidad) * parseFloat(formDetalle.precioUni)).toFixed(2)}
+                {'Subtotal: Bs. ' + (parseFloat(formDetalle.cantidad) * parseFloat(formDetalle.precioUni)).toFixed(2)}
               </div>
             </div>
           )}
 
+          {/* Tabla de artículos agregados con botón eliminar */}
           {detallesLocales.length > 0 && (
             <div className="mt-4">
-              <div className="text-sm font-semibold text-gray-700 mb-2">Articulos agregados:</div>
+              <div className="text-sm font-semibold text-gray-700 mb-2">Artículos agregados:</div>
               <table className="w-full text-sm border rounded-lg overflow-hidden">
                 <thead className="bg-gray-50 text-gray-600 text-xs uppercase">
                   <tr>
-                    <th className="px-3 py-2 text-left">Articulo</th>
-                    <th className="px-3 py-2 text-left">Almacen</th>
+                    <th className="px-3 py-2 text-left">Artículo</th>
+                    <th className="px-3 py-2 text-left">Almacén</th>
                     <th className="px-3 py-2 text-center">Cant.</th>
                     <th className="px-3 py-2 text-right">P.Unit.</th>
                     <th className="px-3 py-2 text-right">Subtotal</th>
+                    <th className="px-3 py-2 text-center">Acción</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -411,13 +500,21 @@ export default function NotasVenta() {
                       <td className="px-3 py-2">{d.nombreProducto}</td>
                       <td className="px-3 py-2 text-gray-500">{d.nombreAlmacen}</td>
                       <td className="px-3 py-2 text-center">{d.cantidad}</td>
-                      <td className="px-3 py-2 text-right">{"Bs. " + d.precioUni.toFixed(2)}</td>
-                      <td className="px-3 py-2 text-right font-medium text-green-700">{"Bs. " + d.subtotal.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-right">{'Bs. ' + d.precioUni.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-right font-medium text-green-700">{'Bs. ' + d.subtotal.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-center">
+                        <button
+                          onClick={() => handleEliminarDetalle(d)}
+                          className="text-red-500 hover:text-red-700 text-xs">
+                          Eliminar
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   <tr className="bg-gray-50">
                     <td colSpan="4" className="px-3 py-2 text-right font-semibold text-gray-700">Total:</td>
-                    <td className="px-3 py-2 text-right font-bold text-green-700">{"Bs. " + montoLocal.toFixed(2)}</td>
+                    <td className="px-3 py-2 text-right font-bold text-green-700">{'Bs. ' + montoLocal.toFixed(2)}</td>
+                    <td></td>
                   </tr>
                 </tbody>
               </table>
@@ -434,13 +531,23 @@ export default function NotasVenta() {
             <button onClick={handleAgregarDetalle}
               disabled={!formDetalle.idProducto || !formDetalle.cantidad || !formDetalle.idAlmacen}
               className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 disabled:opacity-50">
-              + Agregar articulo
+              + Agregar artículo
             </button>
-            <button onClick={handleGenerarQR}
-              disabled={detallesLocales.length === 0}
-              className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50">
-              Generar QR y Pagar
-            </button>
+
+            {tipoPagoActual === 'qr' ? (
+              <button onClick={handleGenerarQR}
+                disabled={detallesLocales.length === 0}
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50">
+                Generar QR y Pagar
+              </button>
+            ) : (
+              <button onClick={handleConfirmarContado}
+                disabled={detallesLocales.length === 0}
+                className="bg-green-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-800 disabled:opacity-50">
+                Confirmar venta al contado
+              </button>
+            )}
+
             <button onClick={() => { resetModo(); refetch() }}
               className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-300">
               Guardar y salir
@@ -449,6 +556,7 @@ export default function NotasVenta() {
         </div>
       )}
 
+      {/* ── Lista de ventas ────────────────────────────────────────────────── */}
       {modo === 'lista' && (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <table className="w-full text-sm">
@@ -459,7 +567,7 @@ export default function NotasVenta() {
                 <th className="px-4 py-3 text-left">Cliente</th>
                 <th className="px-4 py-3 text-left">Total</th>
                 <th className="px-4 py-3 text-left">Pago</th>
-                <th className="px-4 py-3 text-left">Articulos</th>
+                <th className="px-4 py-3 text-left">Artículos</th>
                 <th className="px-4 py-3 text-left">Estado</th>
                 <th className="px-4 py-3 text-left">Acciones</th>
               </tr>
@@ -470,9 +578,15 @@ export default function NotasVenta() {
                   <td className="px-4 py-3">{v.idVenta}</td>
                   <td className="px-4 py-3">{v.fechaVenta}</td>
                   <td className="px-4 py-3">{v.idCliente?.nombreCompleto || '---'}</td>
-                  <td className="px-4 py-3 font-medium text-green-700">{"Bs. " + parseFloat(v.montoTotal).toFixed(2)}</td>
+                  <td className="px-4 py-3 font-medium text-green-700">{'Bs. ' + parseFloat(v.montoTotal).toFixed(2)}</td>
                   <td className="px-4 py-3">
-                    <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">{v.tipoPago}</span>
+                    <span className={
+                      v.tipoPago === 'qr'
+                        ? 'bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full'
+                        : 'bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full'
+                    }>
+                      {v.tipoPago === 'contado' ? 'Contado' : v.tipoPago === 'qr' ? 'QR' : v.tipoPago}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
@@ -484,9 +598,11 @@ export default function NotasVenta() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={v.estado === 'activo' ? 'px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700' : v.estado === 'cancelado' ? 'px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700' : 'px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700'}>
-                      {v.estado}
-                    </span>
+                    <span className={
+                      v.estado === 'activo'    ? 'px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700' :
+                      v.estado === 'cancelado' ? 'px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700' :
+                                                 'px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700'
+                    }>{v.estado}</span>
                   </td>
                   <td className="px-4 py-3">
                     {v.estado === 'activo' && (
